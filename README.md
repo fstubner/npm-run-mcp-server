@@ -1,11 +1,16 @@
 # npm-run-mcp-server
 
-[![Test](https://github.com/fstubner/npm-run-mcp-server/workflows/Test/badge.svg)](https://github.com/fstubner/npm-run-mcp-server/actions/workflows/test.yml)
+<div align="center">
+
+*A Model Context Protocol (MCP) server that exposes your project's `package.json` scripts as tools for AI agents.*
+
 [![NPM Version](https://img.shields.io/npm/v/npm-run-mcp-server.svg)](https://www.npmjs.com/package/npm-run-mcp-server)
-[![Downloads](https://img.shields.io/npm/dm/npm-run-mcp-server.svg)](https://www.npmjs.com/package/npm-run-mcp-server)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen.svg)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Model Context Protocol (MCP) server that exposes your project's `package.json` scripts as tools for AI agents. Provides a predictable, standardized interface for agents to discover and execute your project's automation workflows.
+</div>
+
+Transform any npm project into an AI-accessible toolkit with **zero configuration**. Instead of agents guessing commands, they can automatically discover and execute your build, test, deploy, and custom workflows through a standardized MCP interface.
 
 ## Why Use This?
 
@@ -14,8 +19,6 @@ A Model Context Protocol (MCP) server that exposes your project's `package.json`
 - **Universal package manager support** - npm, pnpm, yarn, and bun
 - **Deterministic execution** - Scripts run in the correct directory with proper package manager
 - **Ready integrations** - Works with GitHub Copilot Chat, Claude, Cursor
-
-Instead of agents guessing commands or asking what scripts are available, they can automatically discover and execute your build, test, deploy, and custom workflows through a standardized MCP interface.
 
 ## Table of Contents
 
@@ -224,6 +227,43 @@ Available command-line flags:
 - `--pm <manager>` - Override package manager detection (npm|pnpm|yarn|bun)
 - `--verbose` - Enable detailed logging to stderr
 - `--list-scripts` - List available scripts and exit
+
+## Contributing
+
+We welcome contributions! Here's how you can help:
+
+### 🐛 Reporting Issues
+
+- Use the [issue tracker](https://github.com/fstubner/npm-run-mcp-server/issues) to report bugs
+- Include your Node.js version, package manager, and operating system
+- Provide a minimal reproduction case when possible
+
+### 🚀 Submitting Changes
+
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+3. **Make** your changes and add tests if applicable
+4. **Test** your changes: `npm run build && npm run test`
+5. **Commit** your changes: `git commit -m 'Add amazing feature'`
+6. **Push** to the branch: `git push origin feature/amazing-feature`
+7. **Submit** a pull request
+
+### 🛠️ Development Setup
+
+```bash
+git clone https://github.com/fstubner/npm-run-mcp-server.git
+cd npm-run-mcp-server
+npm install
+npm run build
+npm run test
+```
+
+### 📋 Guidelines
+
+- Follow the existing code style
+- Add tests for new features
+- Update documentation as needed
+- Keep commits focused and descriptive
 
 ## License
 
