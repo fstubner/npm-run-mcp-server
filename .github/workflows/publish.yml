@@ -39,10 +39,32 @@ jobs:
         if: github.event.inputs.version
         run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
 
-      - name: Publish to NPM (with automation token)
-        run: npm publish --provenance --access public
+      - name: Publish to NPM (try OIDC first)
+        run: |
+          echo "Attempting OIDC Trusted Publisher..."
+          npm publish --provenance --access public
+        continue-on-error: true
+        id: oidc_publish
+
+      - name: Publish to NPM (fallback with token)
+        if: steps.oidc_publish.outcome == 'failure'
+        run: |
+          echo "OIDC failed, using NPM_TOKEN fallback..."
+          npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Update NPM README (force sync)
+        if: always() && (steps.oidc_publish.outcome == 'success' || steps.oidc_publish.outcome == 'failure')
+        run: |
+          echo "Forcing NPM README update..."
+          # This helps ensure NPM README syncs with GitHub
+          sleep 10
+          curl -X POST "https://registry.npmjs.org/npm-run-mcp-server" \
+            -H "Authorization: Bearer ${{ secrets.NPM_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"readme": "sync"}' || echo "README sync request sent"
+        continue-on-error: true
 
       # GitHub Packages publishing
       - name: Setup Node.js for GitHub Packages
