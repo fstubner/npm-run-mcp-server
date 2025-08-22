@@ -46,6 +46,10 @@
     "url": "https://github.com/fstubner/npm-run-mcp-server/issues"
   },
   "homepage": "https://github.com/fstubner/npm-run-mcp-server#readme",
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
 }
 

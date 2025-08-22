@@ -37,12 +37,24 @@ Transform any npm project into an AI-accessible toolkit with **zero configuratio
 
 ## Install
 
+### From NPM Registry (recommended)
 ```bash
 npm i -D npm-run-mcp-server
 # or globally
 npm i -g npm-run-mcp-server
 # ad-hoc
 npx npm-run-mcp-server
+```
+
+### From GitHub Packages
+```bash
+# Configure registry for scoped packages (one-time setup)
+echo "@fstubner:registry=https://npm.pkg.github.com" >> ~/.npmrc
+
+# Install the scoped package
+npm i -D @fstubner/npm-run-mcp-server
+# or globally
+npm i -g @fstubner/npm-run-mcp-server
 ```
 
 ## Usage
