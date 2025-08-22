@@ -39,7 +39,7 @@ jobs:
         if: github.event.inputs.version
         run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
 
-      - name: Publish to NPM (with Trusted Publisher OIDC)
+      - name: Publish to NPM (with automation token)
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
