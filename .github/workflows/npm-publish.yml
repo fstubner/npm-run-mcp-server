@@ -8,15 +8,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
-          
+
       - run: npm ci
       - run: npm run build
-      
+
       - name: Debug package info
         run: |
           echo "=== PACKAGE INFO ==="
@@ -25,7 +25,7 @@ jobs:
           ls -la dist/
           echo "=== FIRST FEW LINES OF DIST ==="
           head -5 dist/index.js
-          
+
       - name: Publish to NPM
         run: npm publish --access public
         env:
