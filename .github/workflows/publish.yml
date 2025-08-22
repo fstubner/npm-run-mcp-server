@@ -41,7 +41,8 @@ jobs:
 
       - name: Publish to NPM (with Trusted Publisher OIDC)
         run: npm publish --provenance --access public
-        # No NODE_AUTH_TOKEN needed with Trusted Publisher - uses OIDC
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # GitHub Packages publishing
       - name: Setup Node.js for GitHub Packages
