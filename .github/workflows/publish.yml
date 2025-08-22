@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: read
       packages: write # for GitHub Packages
-      id-token: write # for npm provenance
+      id-token: write # for npm provenance and OIDC
 
     steps:
       - name: Checkout
@@ -39,10 +39,9 @@ jobs:
         if: github.event.inputs.version
         run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
 
-      - name: Publish to NPM
+      - name: Publish to NPM (with Trusted Publisher OIDC)
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # No NODE_AUTH_TOKEN needed with Trusted Publisher - uses OIDC
 
       # GitHub Packages publishing
       - name: Setup Node.js for GitHub Packages
