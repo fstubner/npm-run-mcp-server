@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { readFileSync, existsSync } from 'fs';
 import { promises as fsp } from 'fs';
 import { dirname, resolve } from 'path';
