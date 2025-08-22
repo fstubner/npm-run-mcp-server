@@ -5,7 +5,7 @@
 *A Model Context Protocol (MCP) server that exposes your project's `package.json` scripts as tools for AI agents.*
 
 [![Test](https://github.com/fstubner/npm-run-mcp-server/workflows/Test/badge.svg)](https://github.com/fstubner/npm-run-mcp-server/actions/workflows/test.yml)
-[![NPM Version](https://img.shields.io/npm/v/npm-run-mcp-server.svg)](https://www.npmjs.com/package/npm-run-mcp-server)
+[![NPM Version](https://img.shields.io/npm/v/@fstubner/npm-run-mcp-server.svg)](https://www.npmjs.com/package/@fstubner/npm-run-mcp-server)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen.svg)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -37,25 +37,16 @@ Transform any npm project into an AI-accessible toolkit with **zero configuratio
 
 ## Install
 
-### From NPM Registry (recommended)
 ```bash
-npm i -D npm-run-mcp-server
-# or globally
-npm i -g npm-run-mcp-server
-# ad-hoc
-npx npm-run-mcp-server
-```
-
-### From GitHub Packages
-```bash
-# Configure registry for scoped packages (one-time setup)
-echo "@fstubner:registry=https://npm.pkg.github.com" >> ~/.npmrc
-
-# Install the scoped package
+# Install from NPM Registry
 npm i -D @fstubner/npm-run-mcp-server
 # or globally
 npm i -g @fstubner/npm-run-mcp-server
+# or run directly
+npx @fstubner/npm-run-mcp-server
 ```
+
+> **Note**: The binary is still called `npm-run-mcp-server` for convenience, even though the package is scoped.
 
 ## Usage
 
@@ -74,7 +65,7 @@ Option A — per-workspace via `.vscode/mcp.json`:
   "servers": {
     "npm-scripts": {
       "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
+      "args": ["-y", "@fstubner/npm-run-mcp-server"]
     }
   }
 }
@@ -87,7 +78,7 @@ Option B — user settings (`settings.json`):
   "mcp.servers": {
     "npm-scripts": {
       "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
+      "args": ["-y", "@fstubner/npm-run-mcp-server"]
     }
   }
 }
@@ -104,7 +95,7 @@ Add to VS Code user/workspace settings (`settings.json`):
   "claude.mcpServers": {
     "npm-scripts": {
       "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
+      "args": ["-y", "@fstubner/npm-run-mcp-server"]
     }
   }
 }
@@ -127,7 +118,7 @@ Using npx:
   "mcpServers": {
     "npm-scripts": {
       "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
+      "args": ["-y", "@fstubner/npm-run-mcp-server"]
     }
   }
 }
@@ -153,7 +144,7 @@ Optional: include environment variables
   "mcpServers": {
     "npm-scripts": {
       "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"],
+      "args": ["-y", "@fstubner/npm-run-mcp-server"],
       "env": {
         "NODE_ENV": "production"
       }

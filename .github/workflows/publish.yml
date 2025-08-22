@@ -39,12 +39,11 @@ jobs:
         if: github.event.inputs.version
         run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
 
-      - name: Publish to NPM (using token for now)
+      - name: Publish to NPM (OIDC Trusted Publisher)
         run: |
-          echo "Publishing with NPM_TOKEN..."
+          echo "Publishing @fstubner/npm-run-mcp-server with OIDC Trusted Publisher..."
           npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # No NODE_AUTH_TOKEN needed - OIDC handles authentication
 
       # GitHub Packages publishing
       - name: Setup Node.js for GitHub Packages
@@ -54,10 +53,10 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           cache: 'npm'
 
-      - name: Create scoped package.json for GitHub Packages
+      - name: Update package.json for GitHub Packages
         run: |
-          # Create a temporary package.json with scoped name for GitHub Packages
-          jq '.name = "@fstubner/npm-run-mcp-server" | .publishConfig.registry = "https://npm.pkg.github.com"' package.json > package-gh.json
+          # Update registry for GitHub Packages (name is already scoped)
+          jq '.publishConfig.registry = "https://npm.pkg.github.com"' package.json > package-gh.json
           mv package-gh.json package.json
 
       - name: Publish to GitHub Packages
