@@ -1,4 +1,4 @@
-name: Publish to NPM
+name: Dual Publish to NPM and GitHub Packages
 
 on:
   release:
@@ -15,13 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # for npm provenance
+      packages: write # for GitHub Packages
+      id-token: write # for npm provenance and OIDC
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js for NPM
         uses: actions/setup-node@v4
         with:
           node-version: '18'
@@ -38,7 +39,27 @@ jobs:
         if: github.event.inputs.version
         run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
 
-      - name: Publish to NPM
-        run: npm publish --provenance --access public
+      - name: Publish to NPM (OIDC Trusted Publisher)
+        run: |
+          echo "Publishing @fstubner/npm-run-mcp-server with OIDC Trusted Publisher..."
+          npm publish --provenance --access public
+        # No NODE_AUTH_TOKEN needed - OIDC handles authentication
+
+      # GitHub Packages publishing
+      - name: Setup Node.js for GitHub Packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://npm.pkg.github.com'
+          cache: 'npm'
+
+      - name: Update package.json for GitHub Packages
+        run: |
+          # Update registry for GitHub Packages (name is already scoped)
+          jq '.publishConfig.registry = "https://npm.pkg.github.com"' package.json > package-gh.json
+          mv package-gh.json package.json
+
+      - name: Publish to GitHub Packages
+        run: npm publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

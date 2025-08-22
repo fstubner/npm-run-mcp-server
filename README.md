@@ -1,16 +1,52 @@
 # npm-run-mcp-server
 
-Expose your project's `package.json` scripts as MCP tools via a tiny TypeScript server.
+<div align="center">
+
+*A Model Context Protocol (MCP) server that exposes your project's `package.json` scripts as tools for AI agents.*
+
+[![Test](https://github.com/fstubner/npm-run-mcp-server/workflows/Test/badge.svg)](https://github.com/fstubner/npm-run-mcp-server/actions/workflows/test.yml)
+[![NPM Version](https://img.shields.io/npm/v/@fstubner/npm-run-mcp-server.svg)](https://www.npmjs.com/package/@fstubner/npm-run-mcp-server)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen.svg)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+</div>
+
+Transform any npm project into an AI-accessible toolkit with **zero configuration**. Instead of agents guessing commands, they can automatically discover and execute your build, test, deploy, and custom workflows through a standardized MCP interface.
+
+## Why Use This?
+
+- **Predictable interface** - Agents get a consistent way to interact with any project's scripts
+- **Zero configuration** - Works with any project that has npm scripts
+- **Universal package manager support** - npm, pnpm, yarn, and bun
+- **Deterministic execution** - Scripts run in the correct directory with proper package manager
+- **Ready integrations** - Works with GitHub Copilot Chat, Claude, Cursor
+
+## Table of Contents
+
+- [Install](#install)
+- [Usage](#usage)
+- [Configuration](#configuration)
+  - [GitHub Copilot Chat (VS Code)](#install-in-github-copilot-chat-vs-code)
+  - [Claude Code (VS Code extension)](#install-in-claude-code-vs-code-extension)
+  - [Claude Code (terminal / standalone)](#install-in-claude-code-terminal--standalone)
+  - [Cursor](#install-in-cursor)
+  - [Install from source](#install-from-source-for-testing-in-another-project)
+- [Testing with MCP Inspector](#testing-with-mcp-inspector)
+- [CLI Options](#cli-options)
+- [License](#license)
 
 ## Install
 
 ```bash
-npm i -D npm-run-mcp-server
+# Install from NPM Registry
+npm i -D @fstubner/npm-run-mcp-server
 # or globally
-npm i -g npm-run-mcp-server
-# ad-hoc
-npx npm-run-mcp-server
+npm i -g @fstubner/npm-run-mcp-server
+# or run directly
+npx @fstubner/npm-run-mcp-server
 ```
+
+> **Note**: The binary is still called `npm-run-mcp-server` for convenience, even though the package is scoped.
 
 ## Usage
 
@@ -18,7 +54,9 @@ Add this server to your MCP host configuration. It uses stdio and dynamically ex
 
 The tool names match your script names. Each tool accepts an optional `args` string that is appended after `--` when running the script. The server detects your package manager (npm, pnpm, yarn, bun).
 
-## Install in GitHub Copilot Chat (VS Code)
+## Configuration
+
+### Install in GitHub Copilot Chat (VS Code)
 
 Option A — per-workspace via `.vscode/mcp.json`:
 
@@ -27,7 +65,7 @@ Option A — per-workspace via `.vscode/mcp.json`:
   "servers": {
     "npm-scripts": {
       "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
+      "args": ["-y", "@fstubner/npm-run-mcp-server"]
     }
   }
 }
@@ -40,7 +78,7 @@ Option B — user settings (`settings.json`):
   "mcp.servers": {
     "npm-scripts": {
       "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
+      "args": ["-y", "@fstubner/npm-run-mcp-server"]
     }
   }
 }
@@ -48,7 +86,7 @@ Option B — user settings (`settings.json`):
 
 Then open Copilot Chat, switch to Agent mode, and start the `npm-scripts` server from the tools panel.
 
-## Install in Claude Code (VS Code extension)
+### Install in Claude Code (VS Code extension)
 
 Add to VS Code user/workspace settings (`settings.json`):
 
@@ -57,7 +95,7 @@ Add to VS Code user/workspace settings (`settings.json`):
   "claude.mcpServers": {
     "npm-scripts": {
       "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
+      "args": ["-y", "@fstubner/npm-run-mcp-server"]
     }
   }
 }
@@ -65,7 +103,7 @@ Add to VS Code user/workspace settings (`settings.json`):
 
 Restart the extension and confirm the server/tools appear.
 
-## Install in Claude Code (terminal / standalone)
+### Install in Claude Code (terminal / standalone)
 
 Add this server to Claude's global config file (paths vary by OS). Create the file if it doesn't exist.
 
@@ -80,7 +118,7 @@ Using npx:
   "mcpServers": {
     "npm-scripts": {
       "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
+      "args": ["-y", "@fstubner/npm-run-mcp-server"]
     }
   }
 }
@@ -106,7 +144,7 @@ Optional: include environment variables
   "mcpServers": {
     "npm-scripts": {
       "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"],
+      "args": ["-y", "@fstubner/npm-run-mcp-server"],
       "env": {
         "NODE_ENV": "production"
       }
@@ -117,7 +155,7 @@ Optional: include environment variables
 
 Restart Claude after editing the config so it picks up the new server.
 
-## Install in Cursor
+### Install in Cursor
 
 - Open Settings → MCP Servers → Add MCP Server
 - Type: NPX Package
@@ -125,7 +163,7 @@ Restart Claude after editing the config so it picks up the new server.
 - Arguments: `-y npm-run-mcp-server`
 - Save and start the server from the tools list
 
-## Install from source (for testing in another project)
+### Install from source (for testing in another project)
 
 Clone, build, and link globally:
 
@@ -168,10 +206,68 @@ Optional CLI flags you can pass in `args`:
 - `--cwd /path/to/project` to choose which project to read `package.json` from
 - `--pm npm|pnpm|yarn|bun` to override package manager detection
 
-## Why
+## Testing with MCP Inspector
 
-- Keep your automation in `package.json`
-- Reuse existing scripts as powerful agent tools
+Test the server locally before integrating with AI agents:
+
+```bash
+# Start MCP Inspector
+npx @modelcontextprotocol/inspector
+
+# In the Inspector UI:
+# 1. Transport Type: STDIO
+# 2. Command: npx
+# 3. Arguments: npm-run-mcp-server --cwd /path/to/your/project --verbose
+# 4. Click "Connect"
+```
+
+You should see your package.json scripts listed as available tools. Try running one - it executes the script and returns the output.
+
+## CLI Options
+
+Available command-line flags:
+
+- `--cwd <path>` - Specify working directory (defaults to current directory)
+- `--pm <manager>` - Override package manager detection (npm|pnpm|yarn|bun)
+- `--verbose` - Enable detailed logging to stderr
+- `--list-scripts` - List available scripts and exit
+
+## Contributing
+
+We welcome contributions! Here's how you can help:
+
+### 🐛 Reporting Issues
+
+- Use the [issue tracker](https://github.com/fstubner/npm-run-mcp-server/issues) to report bugs
+- Include your Node.js version, package manager, and operating system
+- Provide a minimal reproduction case when possible
+
+### 🚀 Submitting Changes
+
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+3. **Make** your changes and add tests if applicable
+4. **Test** your changes: `npm run build && npm run test`
+5. **Commit** your changes: `git commit -m 'Add amazing feature'`
+6. **Push** to the branch: `git push origin feature/amazing-feature`
+7. **Submit** a pull request
+
+### 🛠️ Development Setup
+
+```bash
+git clone https://github.com/fstubner/npm-run-mcp-server.git
+cd npm-run-mcp-server
+npm install
+npm run build
+npm run test
+```
+
+### 📋 Guidelines
+
+- Follow the existing code style
+- Add tests for new features
+- Update documentation as needed
+- Keep commits focused and descriptive
 
 ## License
 

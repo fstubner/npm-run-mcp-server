@@ -1,9 +1,9 @@
 {
-  "name": "npm-run-mcp-server",
-  "version": "0.1.0",
+  "name": "@fstubner/npm-run-mcp-server",
+  "version": "0.1.5",
   "description": "An MCP server that exposes package.json scripts as tools for agents.",
   "bin": {
-    "npm-run-mcp-server": "./dist/index.js"
+    "npm-run-mcp-server": "dist/index.js"
   },
   "type": "module",
   "exports": {
@@ -46,6 +46,9 @@
     "url": "https://github.com/fstubner/npm-run-mcp-server/issues"
   },
   "homepage": "https://github.com/fstubner/npm-run-mcp-server#readme",
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
 }
-
