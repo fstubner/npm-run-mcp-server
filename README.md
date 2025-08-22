@@ -1,6 +1,35 @@
 # npm-run-mcp-server
 
-Expose your project's `package.json` scripts as MCP tools via a tiny TypeScript server.
+[![Test](https://github.com/fstubner/npm-run-mcp-server/workflows/Test/badge.svg)](https://github.com/fstubner/npm-run-mcp-server/actions/workflows/test.yml)
+[![NPM Version](https://img.shields.io/npm/v/npm-run-mcp-server.svg)](https://www.npmjs.com/package/npm-run-mcp-server)
+[![Downloads](https://img.shields.io/npm/dm/npm-run-mcp-server.svg)](https://www.npmjs.com/package/npm-run-mcp-server)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A Model Context Protocol (MCP) server that exposes your project's `package.json` scripts as tools for AI agents. Provides a predictable, standardized interface for agents to discover and execute your project's automation workflows.
+
+## Why Use This?
+
+- **Predictable interface** - Agents get a consistent way to interact with any project's scripts
+- **Zero configuration** - Works with any project that has npm scripts
+- **Universal package manager support** - npm, pnpm, yarn, and bun
+- **Deterministic execution** - Scripts run in the correct directory with proper package manager
+- **Ready integrations** - Works with GitHub Copilot Chat, Claude, Cursor
+
+Instead of agents guessing commands or asking what scripts are available, they can automatically discover and execute your build, test, deploy, and custom workflows through a standardized MCP interface.
+
+## Table of Contents
+
+- [Install](#install)
+- [Usage](#usage)
+- [Configuration](#configuration)
+  - [GitHub Copilot Chat (VS Code)](#install-in-github-copilot-chat-vs-code)
+  - [Claude Code (VS Code extension)](#install-in-claude-code-vs-code-extension)
+  - [Claude Code (terminal / standalone)](#install-in-claude-code-terminal--standalone)
+  - [Cursor](#install-in-cursor)
+  - [Install from source](#install-from-source-for-testing-in-another-project)
+- [Testing with MCP Inspector](#testing-with-mcp-inspector)
+- [CLI Options](#cli-options)
+- [License](#license)
 
 ## Install
 
@@ -18,7 +47,9 @@ Add this server to your MCP host configuration. It uses stdio and dynamically ex
 
 The tool names match your script names. Each tool accepts an optional `args` string that is appended after `--` when running the script. The server detects your package manager (npm, pnpm, yarn, bun).
 
-## Install in GitHub Copilot Chat (VS Code)
+## Configuration
+
+### Install in GitHub Copilot Chat (VS Code)
 
 Option A — per-workspace via `.vscode/mcp.json`:
 
@@ -48,7 +79,7 @@ Option B — user settings (`settings.json`):
 
 Then open Copilot Chat, switch to Agent mode, and start the `npm-scripts` server from the tools panel.
 
-## Install in Claude Code (VS Code extension)
+### Install in Claude Code (VS Code extension)
 
 Add to VS Code user/workspace settings (`settings.json`):
 
@@ -65,7 +96,7 @@ Add to VS Code user/workspace settings (`settings.json`):
 
 Restart the extension and confirm the server/tools appear.
 
-## Install in Claude Code (terminal / standalone)
+### Install in Claude Code (terminal / standalone)
 
 Add this server to Claude's global config file (paths vary by OS). Create the file if it doesn't exist.
 
@@ -117,7 +148,7 @@ Optional: include environment variables
 
 Restart Claude after editing the config so it picks up the new server.
 
-## Install in Cursor
+### Install in Cursor
 
 - Open Settings → MCP Servers → Add MCP Server
 - Type: NPX Package
@@ -125,7 +156,7 @@ Restart Claude after editing the config so it picks up the new server.
 - Arguments: `-y npm-run-mcp-server`
 - Save and start the server from the tools list
 
-## Install from source (for testing in another project)
+### Install from source (for testing in another project)
 
 Clone, build, and link globally:
 
@@ -168,10 +199,31 @@ Optional CLI flags you can pass in `args`:
 - `--cwd /path/to/project` to choose which project to read `package.json` from
 - `--pm npm|pnpm|yarn|bun` to override package manager detection
 
-## Why
+## Testing with MCP Inspector
 
-- Keep your automation in `package.json`
-- Reuse existing scripts as powerful agent tools
+Test the server locally before integrating with AI agents:
+
+```bash
+# Start MCP Inspector
+npx @modelcontextprotocol/inspector
+
+# In the Inspector UI:
+# 1. Transport Type: STDIO
+# 2. Command: npx
+# 3. Arguments: npm-run-mcp-server --cwd /path/to/your/project --verbose
+# 4. Click "Connect"
+```
+
+You should see your package.json scripts listed as available tools. Try running one - it executes the script and returns the output.
+
+## CLI Options
+
+Available command-line flags:
+
+- `--cwd <path>` - Specify working directory (defaults to current directory)
+- `--pm <manager>` - Override package manager detection (npm|pnpm|yarn|bun)
+- `--verbose` - Enable detailed logging to stderr
+- `--list-scripts` - List available scripts and exit
 
 ## License
 
