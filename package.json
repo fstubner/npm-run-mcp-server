@@ -1,6 +1,6 @@
 {
-  "name": "@fstubner/npm-run-mcp-server",
-  "version": "0.1.5",
+  "name": "npm-run-mcp-server",
+  "version": "1.0.0",
   "description": "An MCP server that exposes package.json scripts as tools for agents.",
   "bin": {
     "npm-run-mcp-server": "dist/index.js"
@@ -10,12 +10,11 @@
     ".": "./dist/index.js"
   },
   "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
+    "dist/index.js",
+    "dist/index.d.ts"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && node ./scripts/add-shebang.mjs",
+    "build": "tsc -p tsconfig.json && echo '#!/usr/bin/env node' | cat - dist/index.js > temp && mv temp dist/index.js && chmod +x dist/index.js",
     "start": "node ./dist/index.js",
     "test": "node dist/index.js --list-scripts",
     "prepublishOnly": "npm run build"
