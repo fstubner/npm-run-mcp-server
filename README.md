@@ -234,13 +234,13 @@ Available command-line flags:
 
 We welcome contributions! Here's how you can help:
 
-### 🐛 Reporting Issues
+### Reporting Issues
 
 - Use the [issue tracker](https://github.com/fstubner/npm-run-mcp-server/issues) to report bugs
 - Include your Node.js version, package manager, and operating system
 - Provide a minimal reproduction case when possible
 
-### 🚀 Submitting Changes
+### Submitting Changes
 
 1. **Fork** the repository
 2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
@@ -250,7 +250,7 @@ We welcome contributions! Here's how you can help:
 6. **Push** to the branch: `git push origin feature/amazing-feature`
 7. **Submit** a pull request
 
-### 🛠️ Development Setup
+### Development Setup
 
 ```bash
 git clone https://github.com/fstubner/npm-run-mcp-server.git
@@ -260,7 +260,7 @@ npm run build
 npm run test
 ```
 
-### 📋 Guidelines
+### Guidelines
 
 - Follow the existing code style
 - Add tests for new features
