@@ -5,7 +5,7 @@
 *A Model Context Protocol (MCP) server that exposes your project's `package.json` scripts as tools for AI agents.*
 
 [![Test](https://github.com/fstubner/npm-run-mcp-server/workflows/Test/badge.svg)](https://github.com/fstubner/npm-run-mcp-server/actions/workflows/test.yml)
-[![Build & Publish](https://github.com/fstubner/npm-run-mcp-server/workflows/Publish%20to%20NPM/badge.svg)](https://github.com/fstubner/npm-run-mcp-server/actions/workflows/build-and-publish.yml)
+[![Build & Publish](https://github.com/fstubner/npm-run-mcp-server/workflows/Build%20&%20Publish/badge.svg)](https://github.com/fstubner/npm-run-mcp-server/actions/workflows/build-and-publish.yml)
 [![NPM Version](https://img.shields.io/npm/v/npm-run-mcp-server.svg)](https://www.npmjs.com/package/npm-run-mcp-server)
 [![NPM Installs](https://img.shields.io/npm/dt/npm-run-mcp-server.svg)](https://www.npmjs.com/package/npm-run-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -41,15 +41,35 @@ npx npm-run-mcp-server
 
 ## Usage
 
+### As an MCP Server
+
 Add this server to your MCP host configuration. It uses stdio and dynamically exposes each script from the closest `package.json` (walking up from `process.cwd()`).
 
 The tool names match your script names. Each tool accepts an optional `args` string that is appended after `--` when running the script. The server detects your package manager (npm, pnpm, yarn, bun).
+
+### As a CLI Tool
+
+You can also use this package directly from the command line:
+
+```bash
+# List available scripts in current directory
+npx npm-run-mcp-server --list-scripts
+
+# Run with verbose output
+npx npm-run-mcp-server --verbose
+
+# Specify a different working directory
+npx npm-run-mcp-server --cwd /path/to/project --list-scripts
+
+# Override package manager detection
+npx npm-run-mcp-server --pm yarn --list-scripts
+```
 
 ## Configuration
 
 ### Install in GitHub Copilot Chat (VS Code)
 
-Option A — per-workspace via `.vscode/mcp.json`:
+Option A — per-workspace via `.vscode/mcp.json` (recommended for multi-project use):
 
 ```json
 {
@@ -75,7 +95,20 @@ Option B — user settings (`settings.json`):
 }
 ```
 
+**Note**: The server automatically detects the current project's `package.json` using `process.cwd()`, so no hardcoded paths are needed. It works seamlessly across all your projects.
+
 Then open Copilot Chat, switch to Agent mode, and start the `npm-scripts` server from the tools panel.
+
+### Multi-Project Workflow
+
+The MCP server is designed to work seamlessly across multiple projects without configuration changes:
+
+- **VS Code/Cursor**: Use workspace settings (`.vscode/mcp.json` or `.vscode/settings.json`) - the server automatically targets the current project
+- **Claude Desktop**: The server uses the working directory where Claude is launched
+- **No Hardcoded Paths**: All examples use `npx npm-run-mcp-server` without `--cwd` flags
+- **Automatic Detection**: The server walks up the directory tree to find the nearest `package.json`
+
+This means you can use the same MCP configuration across all your projects, and the server will automatically target the correct project based on where your MCP client is running.
 
 ### Install in Claude Code (VS Code extension)
 
@@ -92,6 +125,8 @@ Add to VS Code user/workspace settings (`settings.json`):
 }
 ```
 
+**Note**: Workspace settings (`.vscode/settings.json`) are recommended for multi-project use, as they automatically target the current project.
+
 Restart the extension and confirm the server/tools appear.
 
 ### Install in Claude Code (terminal / standalone)
@@ -102,7 +137,7 @@ Add this server to Claude's global config file (paths vary by OS). Create the fi
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
 
-Using npx:
+**Recommended approach** - Using npx (works across all projects):
 
 ```json
 {
@@ -115,7 +150,7 @@ Using npx:
 }
 ```
 
-Using a local build (no global install):
+**Alternative** - Using a local build (requires absolute path):
 
 ```json
 {
@@ -127,6 +162,8 @@ Using a local build (no global install):
   }
 }
 ```
+
+**Note**: The npx approach is recommended as it automatically targets the current working directory where Claude is launched.
 
 Optional: include environment variables
 
@@ -153,6 +190,8 @@ Restart Claude after editing the config so it picks up the new server.
 - Command: `npx`
 - Arguments: `-y npm-run-mcp-server`
 - Save and start the server from the tools list
+
+**Note**: This configuration automatically works across all your projects. The server will target the current project's `package.json` wherever Cursor is opened.
 
 ### Install from source (for testing in another project)
 
@@ -194,7 +233,7 @@ In your other project, either reference the global binary or the built file dire
 ```
 
 Optional CLI flags you can pass in `args`:
-- `--cwd /path/to/project` to choose which project to read `package.json` from
+- `--cwd /path/to/project` to choose which project to read `package.json` from (rarely needed - server auto-detects by default)
 - `--pm npm|pnpm|yarn|bun` to override package manager detection
 
 ## Testing with MCP Inspector
@@ -252,6 +291,8 @@ npm install
 npm run build
 npm run test
 ```
+
+The project uses a custom build script located in `scripts/build.cjs` that handles TypeScript compilation and shebang injection for the executable.
 
 ### Guidelines
 

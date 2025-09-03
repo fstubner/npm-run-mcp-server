@@ -1,6 +1,6 @@
 {
   "name": "npm-run-mcp-server",
-  "version": "1.1.0",
+  "version": "0.1.0",
   "description": "An MCP server that exposes package.json scripts as tools for agents.",
   "bin": {
     "npm-run-mcp-server": "dist/index.js"
@@ -14,9 +14,9 @@
     "dist/index.d.ts"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && echo '#!/usr/bin/env node' | cat - dist/index.js > temp && mv temp dist/index.js && chmod +x dist/index.js",
+    "build": "node scripts/build.cjs",
     "start": "node ./dist/index.js",
-    "test": "node dist/index.js --list-scripts",
+    "test": "node dist/index.js --list-scripts && echo 'MCP server test completed successfully'",
     "prepublishOnly": "npm run build"
   },
   "engines": {
@@ -35,7 +35,12 @@
     "model-context-protocol",
     "agent",
     "npm",
-    "scripts"
+    "scripts",
+    "ai",
+    "claude",
+    "cursor",
+    "copilot",
+    "automation"
   ],
   "author": "fstubner",
   "repository": {
