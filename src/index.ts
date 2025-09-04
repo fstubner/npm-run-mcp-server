@@ -170,7 +170,7 @@ async function main() {
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
-  const selfPkgPath = resolve(__dirname, 'package.json');
+  const selfPkgPath = resolve(__dirname, '..', 'package.json');
   let serverName = 'npm-run-mcp-server';
   let serverVersion = '0.0.0';
   try {

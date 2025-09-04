@@ -12,8 +12,5 @@ if (!content.startsWith('#!')) {
     fs.writeFileSync(filePath, content);
 }
 
-console.log('Copying package.json...');
-fs.copyFileSync('package.json', 'dist/package.json');
-
 console.log('Build completed successfully!');
 
