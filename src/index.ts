@@ -94,12 +94,17 @@ async function main() {
   const args = parseCliArgs(process.argv);
   const startCwd = args.cwd ? resolve(String(args.cwd)) : process.cwd();
   const pkgJsonPath = await findNearestPackageJson(startCwd);
+  
+  let projectDir: string | null = null;
+  let projectPkg: PackageJson | null = null;
+  
   if (!pkgJsonPath) {
     console.error(`npm-run-mcp-server: No package.json found starting from ${startCwd}`);
-    process.exit(1);
+    // Don't exit - start server with no tools instead
+  } else {
+    projectDir = dirname(pkgJsonPath);
+    projectPkg = await readPackageJson(pkgJsonPath);
   }
-  const projectDir = dirname(pkgJsonPath);
-  const projectPkg = await readPackageJson(pkgJsonPath);
   const verbose = Boolean(
     (args as any).verbose ||
       process.env.MCP_VERBOSE ||
@@ -107,7 +112,11 @@ async function main() {
   );
   if (verbose) {
     console.error(`[mcp] server starting: cwd=${startCwd}`);
-    console.error(`[mcp] using package.json: ${pkgJsonPath}`);
+    if (pkgJsonPath) {
+      console.error(`[mcp] using package.json: ${pkgJsonPath}`);
+    } else {
+      console.error(`[mcp] no package.json found - starting with no tools`);
+    }
   }
 
   const __filename = fileURLToPath(import.meta.url);
@@ -123,12 +132,30 @@ async function main() {
     }
   } catch {}
 
+  const server = new McpServer({ name: serverName, version: serverVersion });
+
+  // Handle case where no package.json was found
+  if (!projectDir || !projectPkg) {
+    if ((args as any)['list-scripts']) {
+      console.error('No package.json found - no scripts available');
+      process.exit(0);
+    }
+    
+    const transport = new StdioServerTransport();
+    if (verbose) {
+      console.error(`[mcp] no tools registered; awaiting stdio client...`);
+    }
+    await server.connect(transport);
+    if (verbose) {
+      console.error(`[mcp] stdio transport connected (waiting for initialize)`);
+    }
+    return;
+  }
+
   const pm = detectPackageManager(projectDir, projectPkg, args.pm as PackageManager | undefined);
   if (verbose) {
     console.error(`[mcp] detected package manager: ${pm}`);
   }
-
-  const server = new McpServer({ name: serverName, version: serverVersion });
 
   const scripts = projectPkg.scripts ?? {};
   const scriptNames = Object.keys(scripts);
