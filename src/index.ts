@@ -296,7 +296,7 @@ async function main() {
     if (verbose) {
       console.error(`[mcp] setting up file watcher for: ${pkgJsonPath}`);
     }
-    
+
     const watcher = watch(pkgJsonPath, (eventType) => {
       if (eventType === 'change') {
         if (verbose) {
@@ -312,7 +312,7 @@ async function main() {
       watcher.close();
       process.exit(0);
     });
-    
+
     process.on('SIGTERM', () => {
       watcher.close();
       process.exit(0);

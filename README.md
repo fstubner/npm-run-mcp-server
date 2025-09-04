@@ -51,6 +51,7 @@ Add this server to your MCP host configuration. It uses stdio and automatically 
 - **Rich Descriptions**: Each tool includes the actual script command in its description
 - **Package Manager Detection**: Automatically detects npm, pnpm, yarn, or bun
 - **Optional Arguments**: Each tool accepts an optional `args` string that is appended after `--` when running the script
+- **Auto-Restart on Changes**: Automatically restarts when `package.json` scripts are modified, ensuring tools are always up-to-date
 
 ### As a CLI Tool
 
@@ -115,6 +116,16 @@ The MCP server is designed to work seamlessly across multiple projects without c
 - **Cross-Platform**: Handles Windows/WSL path conversions automatically
 
 This means you can use the same MCP configuration across all your projects, and the server will automatically target the correct project based on your current workspace.
+
+### Auto-Restart on Script Changes
+
+The MCP server automatically monitors your `package.json` file for changes. When you add, remove, or modify scripts, the server will:
+
+1. **Detect the change** and log it (with `--verbose` flag)
+2. **Gracefully exit** to allow the MCP client to restart the server
+3. **Reload with new tools** based on the updated scripts
+
+This ensures your MCP tools are always synchronized with your current `package.json` scripts without manual intervention.
 
 ### Install in Claude Code (VS Code extension)
 
