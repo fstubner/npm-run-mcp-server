@@ -114,7 +114,8 @@ async function main() {
   console.error('Parsed args:', args);
 
   // Try to detect workspace directory from environment variables
-  let startCwd: string;
+  let startCwd: string = process.cwd(); // Initialize with fallback
+  
   if (args.cwd) {
     startCwd = resolve(String(args.cwd));
   } else if (process.env.VSCODE_WORKSPACE_FOLDER) {
