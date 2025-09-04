@@ -5,8 +5,12 @@ console.log('Building TypeScript...');
 execSync('node ./node_modules/typescript/bin/tsc -p tsconfig.json', { stdio: 'inherit' });
 
 console.log('Adding shebang...');
-const content = fs.readFileSync('dist/index.js', 'utf8');
-fs.writeFileSync('dist/index.js', '#!/usr/bin/env node\n' + content);
+const filePath = 'dist/index.js';
+let content = fs.readFileSync(filePath, 'utf8');
+if (!content.startsWith('#!')) {
+    content = '#!/usr/bin/env node\n' + content;
+    fs.writeFileSync(filePath, content);
+}
 
 console.log('Build completed successfully!');
 

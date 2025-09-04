@@ -1,6 +1,6 @@
 {
   "name": "npm-run-mcp-server",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "An MCP server that exposes package.json scripts as tools for agents.",
   "bin": {
     "npm-run-mcp-server": "dist/index.js"
@@ -26,6 +26,9 @@
     "@modelcontextprotocol/sdk": "^1.0.0",
     "zod": "^3.23.8"
   },
+  "bundledDependencies": [
+    "zod"
+  ],
   "devDependencies": {
     "typescript": "^5.4.0",
     "@types/node": "^20.14.9"
