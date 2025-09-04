@@ -92,7 +92,18 @@ function trimOutput(out: string, limit = 12000): { text: string; truncated: bool
 
 async function main() {
   const args = parseCliArgs(process.argv);
-  const startCwd = args.cwd ? resolve(String(args.cwd)) : process.cwd();
+  
+  // Try to detect workspace directory from environment variables
+  let startCwd: string;
+  if (args.cwd) {
+    startCwd = resolve(String(args.cwd));
+  } else if (process.env.VSCODE_WORKSPACE_FOLDER) {
+    startCwd = process.env.VSCODE_WORKSPACE_FOLDER;
+  } else if (process.env.CURSOR_WORKSPACE_FOLDER) {
+    startCwd = process.env.CURSOR_WORKSPACE_FOLDER;
+  } else {
+    startCwd = process.cwd();
+  }
   const pkgJsonPath = await findNearestPackageJson(startCwd);
 
   let projectDir: string | null = null;
@@ -112,6 +123,7 @@ async function main() {
   );
   if (verbose) {
     console.error(`[mcp] server starting: cwd=${startCwd}`);
+    console.error(`[mcp] detected workspace: ${process.env.VSCODE_WORKSPACE_FOLDER || process.env.CURSOR_WORKSPACE_FOLDER || 'none'}`);
     if (pkgJsonPath) {
       console.error(`[mcp] using package.json: ${pkgJsonPath}`);
     } else {
