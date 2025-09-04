@@ -100,9 +100,19 @@ async function main() {
   console.error('  PWD:', process.env.PWD);
   console.error('  CWD:', process.cwd());
   
+  // Log all environment variables that might contain workspace info
+  const workspaceVars = Object.keys(process.env).filter(key => 
+    key.toLowerCase().includes('workspace') || 
+    key.toLowerCase().includes('folder') ||
+    key.toLowerCase().includes('project') ||
+    key.toLowerCase().includes('cursor') ||
+    key.toLowerCase().includes('vscode')
+  );
+  console.error('Workspace-related env vars:', workspaceVars.map(key => `${key}=${process.env[key]}`));
+
   const args = parseCliArgs(process.argv);
   console.error('Parsed args:', args);
-  
+
   // Try to detect workspace directory from environment variables
   let startCwd: string;
   if (args.cwd) {
@@ -112,9 +122,32 @@ async function main() {
   } else if (process.env.CURSOR_WORKSPACE_FOLDER) {
     startCwd = process.env.CURSOR_WORKSPACE_FOLDER;
   } else {
-    startCwd = process.cwd();
+    // Fallback: try to find a workspace by looking for common patterns
+    const currentDir = process.cwd();
+    console.error('Trying to detect workspace from current directory:', currentDir);
+    
+    // If we're in the MCP server directory, try to find a parent directory with package.json
+    if (currentDir.includes('npm-run-mcp-server')) {
+      console.error('Detected MCP server directory, looking for parent workspace...');
+      // Try going up directories to find a workspace
+      let testDir = dirname(currentDir);
+      for (let i = 0; i < 5; i++) {
+        const testPkgJson = resolve(testDir, 'package.json');
+        if (existsSync(testPkgJson)) {
+          console.error('Found workspace at:', testDir);
+          startCwd = testDir;
+          break;
+        }
+        testDir = dirname(testDir);
+      }
+      if (!startCwd) {
+        startCwd = currentDir;
+      }
+    } else {
+      startCwd = currentDir;
+    }
   }
-  
+
   console.error('Final startCwd:', startCwd);
   const pkgJsonPath = await findNearestPackageJson(startCwd);
 
