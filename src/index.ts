@@ -232,8 +232,8 @@ async function main() {
 
     server.tool(
       toolName,
+      description,
       {
-        description: description,
         inputSchema: {
           type: 'object',
           properties: {
