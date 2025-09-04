@@ -170,7 +170,7 @@ async function main() {
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
-  const selfPkgPath = resolve(__dirname, '..', 'package.json');
+  const selfPkgPath = resolve(__dirname, 'package.json');
   let serverName = 'npm-run-mcp-server';
   let serverVersion = '0.0.0';
   try {
@@ -178,8 +178,19 @@ async function main() {
       const selfPkg = JSON.parse(readFileSync(selfPkgPath, 'utf8')) as PackageJson;
       if (selfPkg.name) serverName = selfPkg.name;
       if (selfPkg.version) serverVersion = selfPkg.version;
+      if (verbose) {
+        console.error(`[mcp] loaded server info: ${serverName}@${serverVersion}`);
+      }
+    } else {
+      if (verbose) {
+        console.error(`[mcp] package.json not found at: ${selfPkgPath}`);
+      }
     }
-  } catch {}
+  } catch (error) {
+    if (verbose) {
+      console.error(`[mcp] error reading package.json:`, error);
+    }
+  }
 
   const server = new McpServer({ name: serverName, version: serverVersion });
 
