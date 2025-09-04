@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, watch } from 'fs';
 import { promises as fsp } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -289,6 +289,34 @@ async function main() {
   await server.connect(transport);
   if (verbose) {
     console.error(`[mcp] stdio transport connected (waiting for initialize)`);
+  }
+
+  // Set up file watcher for package.json changes
+  if (pkgJsonPath) {
+    if (verbose) {
+      console.error(`[mcp] setting up file watcher for: ${pkgJsonPath}`);
+    }
+    
+    const watcher = watch(pkgJsonPath, (eventType) => {
+      if (eventType === 'change') {
+        if (verbose) {
+          console.error(`[mcp] package.json changed, restarting server...`);
+        }
+        // Gracefully exit to allow the MCP client to restart the server
+        process.exit(0);
+      }
+    });
+
+    // Handle cleanup on process exit
+    process.on('SIGINT', () => {
+      watcher.close();
+      process.exit(0);
+    });
+    
+    process.on('SIGTERM', () => {
+      watcher.close();
+      process.exit(0);
+    });
   }
 }
 
