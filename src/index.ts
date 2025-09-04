@@ -102,7 +102,7 @@ async function main() {
     // Cursor sets this as a semicolon-separated list, take the first one
     const workspacePaths = process.env.WORKSPACE_FOLDER_PATHS.split(';');
     let workspacePath = workspacePaths[0];
-    
+
     // Convert Windows path to WSL path if running in WSL
     if (process.platform === 'linux' && workspacePath.match(/^[A-Za-z]:\\/)) {
       // Convert H:\path\to\project to /mnt/h/path/to/project
@@ -110,7 +110,7 @@ async function main() {
       const path = workspacePath.slice(3).replace(/\\/g, '/');
       workspacePath = `/mnt/${drive}${path}`;
     }
-    
+
     startCwd = workspacePath;
   } else if (process.env.VSCODE_WORKSPACE_FOLDER) {
     startCwd = process.env.VSCODE_WORKSPACE_FOLDER;
@@ -119,7 +119,7 @@ async function main() {
   } else {
     // Fallback: try to find a workspace by looking for common patterns
     const currentDir = process.cwd();
-    
+
     // If we're in the MCP server directory, try to find a parent directory with package.json
     if (currentDir.includes('npm-run-mcp-server')) {
       // Try going up directories to find a workspace
