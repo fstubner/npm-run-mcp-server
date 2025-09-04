@@ -91,7 +91,17 @@ function trimOutput(out: string, limit = 12000): { text: string; truncated: bool
 }
 
 async function main() {
+  // Always log startup - this should always show
+  console.error('=== MCP SERVER STARTING ===');
+  console.error('Args:', process.argv);
+  console.error('Environment variables:');
+  console.error('  VSCODE_WORKSPACE_FOLDER:', process.env.VSCODE_WORKSPACE_FOLDER);
+  console.error('  CURSOR_WORKSPACE_FOLDER:', process.env.CURSOR_WORKSPACE_FOLDER);
+  console.error('  PWD:', process.env.PWD);
+  console.error('  CWD:', process.cwd());
+  
   const args = parseCliArgs(process.argv);
+  console.error('Parsed args:', args);
   
   // Try to detect workspace directory from environment variables
   let startCwd: string;
@@ -104,6 +114,8 @@ async function main() {
   } else {
     startCwd = process.cwd();
   }
+  
+  console.error('Final startCwd:', startCwd);
   const pkgJsonPath = await findNearestPackageJson(startCwd);
 
   let projectDir: string | null = null;
