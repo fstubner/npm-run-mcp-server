@@ -94,10 +94,10 @@ async function main() {
   const args = parseCliArgs(process.argv);
   const startCwd = args.cwd ? resolve(String(args.cwd)) : process.cwd();
   const pkgJsonPath = await findNearestPackageJson(startCwd);
-  
+
   let projectDir: string | null = null;
   let projectPkg: PackageJson | null = null;
-  
+
   if (!pkgJsonPath) {
     console.error(`npm-run-mcp-server: No package.json found starting from ${startCwd}`);
     // Don't exit - start server with no tools instead
@@ -140,7 +140,7 @@ async function main() {
       console.error('No package.json found - no scripts available');
       process.exit(0);
     }
-    
+
     const transport = new StdioServerTransport();
     if (verbose) {
       console.error(`[mcp] no tools registered; awaiting stdio client...`);
@@ -173,10 +173,17 @@ async function main() {
 
   // Register a tool per script
   for (const scriptName of scriptNames) {
+    // Sanitize tool name - MCP tools can only contain [a-z0-9_-]
+    const toolName = scriptName.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    
+    // Create a more descriptive description
+    const scriptCommand = scripts[scriptName];
+    const description = `Run npm script '${scriptName}': ${scriptCommand}`;
+    
     server.tool(
-      scriptName,
+      toolName,
       {
-        description: `Run package script '${scriptName}' via ${pm} in ${projectDir}`,
+        description,
         inputSchema: {
           type: 'object',
           properties: {
