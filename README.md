@@ -43,9 +43,14 @@ npx npm-run-mcp-server
 
 ### As an MCP Server
 
-Add this server to your MCP host configuration. It uses stdio and dynamically exposes each script from the closest `package.json` (walking up from `process.cwd()`).
+Add this server to your MCP host configuration. It uses stdio and automatically detects your project's `package.json` using workspace environment variables or by walking up from the current working directory.
 
-The tool names match your script names. Each tool accepts an optional `args` string that is appended after `--` when running the script. The server detects your package manager (npm, pnpm, yarn, bun).
+**Key Features:**
+- **Automatic Workspace Detection**: Works seamlessly across different projects without configuration changes
+- **Smart Tool Names**: Script names with colons (like `install:discord`) are automatically converted to valid tool names (`install_discord`)
+- **Rich Descriptions**: Each tool includes the actual script command in its description
+- **Package Manager Detection**: Automatically detects npm, pnpm, yarn, or bun
+- **Optional Arguments**: Each tool accepts an optional `args` string that is appended after `--` when running the script
 
 ### As a CLI Tool
 
@@ -95,7 +100,7 @@ Option B — user settings (`settings.json`):
 }
 ```
 
-**Note**: The server automatically detects the current project's `package.json` using `process.cwd()`, so no hardcoded paths are needed. It works seamlessly across all your projects.
+**Note**: The server automatically detects the current project's `package.json` using workspace environment variables (like `WORKSPACE_FOLDER_PATHS`) or by walking up from the current working directory. No hardcoded paths are needed - it works seamlessly across all your projects.
 
 Then open Copilot Chat, switch to Agent mode, and start the `npm-scripts` server from the tools panel.
 
@@ -103,12 +108,13 @@ Then open Copilot Chat, switch to Agent mode, and start the `npm-scripts` server
 
 The MCP server is designed to work seamlessly across multiple projects without configuration changes:
 
-- **VS Code/Cursor**: Use workspace settings (`.vscode/mcp.json` or `.vscode/settings.json`) - the server automatically targets the current project
+- **VS Code/Cursor**: The server automatically detects the current workspace using environment variables like `WORKSPACE_FOLDER_PATHS`
 - **Claude Desktop**: The server uses the working directory where Claude is launched
 - **No Hardcoded Paths**: All examples use `npx npm-run-mcp-server` without `--cwd` flags
-- **Automatic Detection**: The server walks up the directory tree to find the nearest `package.json`
+- **Smart Detection**: The server first tries workspace environment variables, then falls back to walking up the directory tree to find the nearest `package.json`
+- **Cross-Platform**: Handles Windows/WSL path conversions automatically
 
-This means you can use the same MCP configuration across all your projects, and the server will automatically target the correct project based on where your MCP client is running.
+This means you can use the same MCP configuration across all your projects, and the server will automatically target the correct project based on your current workspace.
 
 ### Install in Claude Code (VS Code extension)
 

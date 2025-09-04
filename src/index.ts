@@ -91,27 +91,7 @@ function trimOutput(out: string, limit = 12000): { text: string; truncated: bool
 }
 
 async function main() {
-  // Always log startup - this should always show
-  console.error('=== MCP SERVER STARTING ===');
-  console.error('Args:', process.argv);
-  console.error('Environment variables:');
-  console.error('  VSCODE_WORKSPACE_FOLDER:', process.env.VSCODE_WORKSPACE_FOLDER);
-  console.error('  CURSOR_WORKSPACE_FOLDER:', process.env.CURSOR_WORKSPACE_FOLDER);
-  console.error('  PWD:', process.env.PWD);
-  console.error('  CWD:', process.cwd());
-
-  // Log all environment variables that might contain workspace info
-  const workspaceVars = Object.keys(process.env).filter(key =>
-    key.toLowerCase().includes('workspace') ||
-    key.toLowerCase().includes('folder') ||
-    key.toLowerCase().includes('project') ||
-    key.toLowerCase().includes('cursor') ||
-    key.toLowerCase().includes('vscode')
-  );
-  console.error('Workspace-related env vars:', workspaceVars.map(key => `${key}=${process.env[key]}`));
-
   const args = parseCliArgs(process.argv);
-  console.error('Parsed args:', args);
 
   // Try to detect workspace directory from environment variables
   let startCwd: string = process.cwd(); // Initialize with fallback
@@ -129,11 +109,9 @@ async function main() {
       const drive = workspacePath[0].toLowerCase();
       const path = workspacePath.slice(3).replace(/\\/g, '/');
       workspacePath = `/mnt/${drive}${path}`;
-      console.error('Converted Windows path to WSL path:', workspacePath);
     }
     
     startCwd = workspacePath;
-    console.error('Using WORKSPACE_FOLDER_PATHS:', startCwd);
   } else if (process.env.VSCODE_WORKSPACE_FOLDER) {
     startCwd = process.env.VSCODE_WORKSPACE_FOLDER;
   } else if (process.env.CURSOR_WORKSPACE_FOLDER) {
@@ -141,18 +119,15 @@ async function main() {
   } else {
     // Fallback: try to find a workspace by looking for common patterns
     const currentDir = process.cwd();
-    console.error('Trying to detect workspace from current directory:', currentDir);
-
+    
     // If we're in the MCP server directory, try to find a parent directory with package.json
     if (currentDir.includes('npm-run-mcp-server')) {
-      console.error('Detected MCP server directory, looking for parent workspace...');
       // Try going up directories to find a workspace
       let testDir = dirname(currentDir);
       let foundWorkspace = false;
       for (let i = 0; i < 5; i++) {
         const testPkgJson = resolve(testDir, 'package.json');
         if (existsSync(testPkgJson)) {
-          console.error('Found workspace at:', testDir);
           startCwd = testDir;
           foundWorkspace = true;
           break;
@@ -166,8 +141,6 @@ async function main() {
       startCwd = currentDir;
     }
   }
-
-  console.error('Final startCwd:', startCwd);
   const pkgJsonPath = await findNearestPackageJson(startCwd);
 
   let projectDir: string | null = null;
@@ -256,9 +229,6 @@ async function main() {
     const scriptCommand = scripts[scriptName];
     const description = `Run script ${scriptName}`;
 
-    if (verbose) {
-      console.error(`[mcp] registering tool: ${toolName} with description: ${description}`);
-    }
 
     server.tool(
       toolName,
