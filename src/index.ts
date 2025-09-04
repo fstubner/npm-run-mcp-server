@@ -99,10 +99,10 @@ async function main() {
   console.error('  CURSOR_WORKSPACE_FOLDER:', process.env.CURSOR_WORKSPACE_FOLDER);
   console.error('  PWD:', process.env.PWD);
   console.error('  CWD:', process.cwd());
-  
+
   // Log all environment variables that might contain workspace info
-  const workspaceVars = Object.keys(process.env).filter(key => 
-    key.toLowerCase().includes('workspace') || 
+  const workspaceVars = Object.keys(process.env).filter(key =>
+    key.toLowerCase().includes('workspace') ||
     key.toLowerCase().includes('folder') ||
     key.toLowerCase().includes('project') ||
     key.toLowerCase().includes('cursor') ||
@@ -131,16 +131,18 @@ async function main() {
       console.error('Detected MCP server directory, looking for parent workspace...');
       // Try going up directories to find a workspace
       let testDir = dirname(currentDir);
+      let foundWorkspace = false;
       for (let i = 0; i < 5; i++) {
         const testPkgJson = resolve(testDir, 'package.json');
         if (existsSync(testPkgJson)) {
           console.error('Found workspace at:', testDir);
           startCwd = testDir;
+          foundWorkspace = true;
           break;
         }
         testDir = dirname(testDir);
       }
-      if (!startCwd) {
+      if (!foundWorkspace) {
         startCwd = currentDir;
       }
     } else {
