@@ -118,6 +118,11 @@ async function main() {
   
   if (args.cwd) {
     startCwd = resolve(String(args.cwd));
+  } else if (process.env.WORKSPACE_FOLDER_PATHS) {
+    // Cursor sets this as a semicolon-separated list, take the first one
+    const workspacePaths = process.env.WORKSPACE_FOLDER_PATHS.split(';');
+    startCwd = workspacePaths[0];
+    console.error('Using WORKSPACE_FOLDER_PATHS:', startCwd);
   } else if (process.env.VSCODE_WORKSPACE_FOLDER) {
     startCwd = process.env.VSCODE_WORKSPACE_FOLDER;
   } else if (process.env.CURSOR_WORKSPACE_FOLDER) {
@@ -126,7 +131,7 @@ async function main() {
     // Fallback: try to find a workspace by looking for common patterns
     const currentDir = process.cwd();
     console.error('Trying to detect workspace from current directory:', currentDir);
-    
+
     // If we're in the MCP server directory, try to find a parent directory with package.json
     if (currentDir.includes('npm-run-mcp-server')) {
       console.error('Detected MCP server directory, looking for parent workspace...');
