@@ -1,6 +1,6 @@
 {
   "name": "npm-run-mcp-server",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "An MCP server that exposes package.json scripts as tools for agents.",
   "bin": {
     "npm-run-mcp-server": "dist/index.js"

@@ -175,11 +175,15 @@ async function main() {
   for (const scriptName of scriptNames) {
     // Sanitize tool name - MCP tools can only contain [a-z0-9_-]
     const toolName = scriptName.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    
+
     // Create a more descriptive description
     const scriptCommand = scripts[scriptName];
-    const description = `Run npm script '${scriptName}': ${scriptCommand}`;
+    const description = `Run npm script ${scriptName} - ${scriptCommand}`;
     
+    if (verbose) {
+      console.error(`[mcp] registering tool: ${toolName} with description: ${description}`);
+    }
+
     server.tool(
       toolName,
       {
