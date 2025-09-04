@@ -178,8 +178,8 @@ async function main() {
 
     // Create a more descriptive description
     const scriptCommand = scripts[scriptName];
-    const description = `Run npm script ${scriptName} - ${scriptCommand}`;
-    
+    const description = `Run script ${scriptName}`;
+
     if (verbose) {
       console.error(`[mcp] registering tool: ${toolName} with description: ${description}`);
     }
@@ -187,7 +187,7 @@ async function main() {
     server.tool(
       toolName,
       {
-        description,
+        description: description,
         inputSchema: {
           type: 'object',
           properties: {
