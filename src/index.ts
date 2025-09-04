@@ -115,13 +115,24 @@ async function main() {
 
   // Try to detect workspace directory from environment variables
   let startCwd: string = process.cwd(); // Initialize with fallback
-  
+
   if (args.cwd) {
     startCwd = resolve(String(args.cwd));
   } else if (process.env.WORKSPACE_FOLDER_PATHS) {
     // Cursor sets this as a semicolon-separated list, take the first one
     const workspacePaths = process.env.WORKSPACE_FOLDER_PATHS.split(';');
-    startCwd = workspacePaths[0];
+    let workspacePath = workspacePaths[0];
+    
+    // Convert Windows path to WSL path if running in WSL
+    if (process.platform === 'linux' && workspacePath.match(/^[A-Za-z]:\\/)) {
+      // Convert H:\path\to\project to /mnt/h/path/to/project
+      const drive = workspacePath[0].toLowerCase();
+      const path = workspacePath.slice(3).replace(/\\/g, '/');
+      workspacePath = `/mnt/${drive}${path}`;
+      console.error('Converted Windows path to WSL path:', workspacePath);
+    }
+    
+    startCwd = workspacePath;
     console.error('Using WORKSPACE_FOLDER_PATHS:', startCwd);
   } else if (process.env.VSCODE_WORKSPACE_FOLDER) {
     startCwd = process.env.VSCODE_WORKSPACE_FOLDER;
