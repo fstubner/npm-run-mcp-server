@@ -227,7 +227,7 @@ async function main() {
 
     // Create a more descriptive description
     const scriptCommand = scripts[scriptName];
-    const description = `Run script ${scriptName}`;
+    const description = `Run npm script "${scriptName}": ${scriptCommand}`;
 
 
     server.tool(
