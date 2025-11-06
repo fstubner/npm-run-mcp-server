@@ -12,7 +12,9 @@
 
 </div>
 
-
+<a href="https://glama.ai/mcp/servers/@fstubner/npm-run-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@fstubner/npm-run-mcp-server/badge" alt="npm-run-mcp-server MCP server" />
+</a>
 
 ## Table of Contents
 
@@ -321,5 +323,3 @@ The project uses a custom build script located in `scripts/build.cjs` that handl
 ## License
 
 MIT
-
-
