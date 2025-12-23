@@ -2,22 +2,160 @@ import { readFileSync, existsSync, watch } from 'fs';
 import { promises as fsp } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { exec as nodeExec } from 'child_process';
-import { promisify } from 'util';
+import spawn from 'cross-spawn';
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-
-const exec = promisify(nodeExec);
+import { z } from 'zod';
 
 type PackageJson = {
   name?: string;
   version?: string;
   scripts?: Record<string, string>;
   packageManager?: string;
+  mcp?: unknown;
 };
 
 type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
+
+type McpScriptConfig = {
+  toolName?: string;
+  description?: string;
+  inputSchema?: unknown;
+  argsDescription?: string;
+};
+
+type McpConfig = {
+  include?: string[];
+  exclude?: string[];
+  scripts?: Record<string, McpScriptConfig>;
+};
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readMcpConfig(pkg: PackageJson): McpConfig {
+  if (!isPlainObject(pkg.mcp)) return {};
+  const raw = pkg.mcp;
+  const include = Array.isArray(raw.include) ? raw.include.filter((v): v is string => typeof v === 'string') : undefined;
+  const exclude = Array.isArray(raw.exclude) ? raw.exclude.filter((v): v is string => typeof v === 'string') : undefined;
+  let scripts: Record<string, McpScriptConfig> | undefined;
+  if (isPlainObject(raw.scripts)) {
+    scripts = {};
+    for (const [name, value] of Object.entries(raw.scripts)) {
+      if (!isPlainObject(value)) continue;
+      scripts[name] = {
+        toolName: typeof value.toolName === 'string' ? value.toolName : undefined,
+        description: typeof value.description === 'string' ? value.description : undefined,
+        inputSchema: isPlainObject(value.inputSchema) ? value.inputSchema : undefined,
+        argsDescription: typeof value.argsDescription === 'string' ? value.argsDescription : undefined,
+      };
+    }
+  }
+  return { include, exclude, scripts };
+}
+
+function normalizeToolName(name: string): string {
+  const normalized = name.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  return normalized.length > 0 ? normalized : 'script';
+}
+
+function jsonSchemaToZod(schema: unknown): z.ZodTypeAny {
+  if (!isPlainObject(schema)) return z.any();
+
+  if (Array.isArray(schema.enum) && schema.enum.every((v) => typeof v === 'string')) {
+    const values = schema.enum as string[];
+    const [first, ...rest] = values;
+    let base: z.ZodTypeAny = first ? z.literal(first) : z.string();
+    for (const v of rest) base = z.union([base, z.literal(v)]);
+    return typeof schema.description === 'string' ? base.describe(schema.description) : base;
+  }
+
+  const type = schema.type;
+  let zod: z.ZodTypeAny;
+  switch (type) {
+    case 'string':
+      zod = z.string();
+      break;
+    case 'boolean':
+      zod = z.boolean();
+      break;
+    case 'number':
+      zod = z.number();
+      break;
+    case 'integer':
+      zod = z.number().int();
+      break;
+    case 'array': {
+      const items = schema.items;
+      if (isPlainObject(items) && items.type === 'string') zod = z.array(z.string());
+      else zod = z.array(z.any());
+      break;
+    }
+    case 'object': {
+      const properties = isPlainObject(schema.properties) ? schema.properties : {};
+      const requiredSet = new Set(
+        Array.isArray(schema.required) ? schema.required.filter((v): v is string => typeof v === 'string') : []
+      );
+
+      const shape: Record<string, z.ZodTypeAny> = {};
+      for (const [key, value] of Object.entries(properties)) {
+        let prop = jsonSchemaToZod(value);
+        if (!requiredSet.has(key)) prop = prop.optional();
+        shape[key] = prop;
+      }
+
+      const obj = z.object(shape);
+      zod = schema.additionalProperties === false ? obj.strict() : obj.passthrough();
+      break;
+    }
+    default:
+      zod = z.any();
+      break;
+  }
+
+  if (typeof schema.description === 'string') zod = zod.describe(schema.description);
+  return zod;
+}
+
+function buildToolInputSchema(configForScript: McpScriptConfig | undefined): z.ZodTypeAny {
+  const base = z
+    .object({
+      _: z.array(z.string()).optional(),
+      args: z
+        .union([z.string(), z.array(z.string())])
+        .optional()
+        .describe(configForScript?.argsDescription ?? 'Optional arguments appended after -- to the script'),
+    })
+    .passthrough();
+
+  if (!configForScript?.inputSchema) return base;
+
+  const converted = jsonSchemaToZod(configForScript.inputSchema);
+  if (converted instanceof z.ZodObject) {
+    const merged = converted.extend({
+      _: base.shape._,
+      args: base.shape.args,
+    });
+    return configForScript.inputSchema && isPlainObject(configForScript.inputSchema) && configForScript.inputSchema.additionalProperties === false
+      ? merged.strict()
+      : merged.passthrough();
+  }
+
+  return base;
+}
+
+function filterScriptNames(scriptNames: string[], config: McpConfig): string[] {
+  const include = config.include && config.include.length > 0 ? new Set(config.include) : null;
+  const exclude = config.exclude && config.exclude.length > 0 ? new Set(config.exclude) : null;
+  const filtered = scriptNames.filter((name) => {
+    if (include && !include.has(name)) return false;
+    if (exclude && exclude.has(name)) return false;
+    return true;
+  });
+  return filtered.sort();
+}
 
 function parseCliArgs(argv: string[]) {
   const args: Record<string, string | boolean> = {};
@@ -69,25 +207,175 @@ function detectPackageManager(projectDir: string, pkg: PackageJson, override?: P
   return 'npm';
 }
 
-function buildRunCommand(pm: PackageManager, scriptName: string, extraArgs?: string): string {
-  const quoted = scriptName.replace(/"/g, '\\"');
-  const suffix = extraArgs && extraArgs.trim().length > 0 ? ` -- ${extraArgs}` : '';
-  switch (pm) {
-    case 'pnpm':
-      return `pnpm run "${quoted}"${suffix}`;
-    case 'yarn':
-      return `yarn run "${quoted}"${suffix}`;
-    case 'bun':
-      return `bun run "${quoted}"${suffix}`;
-    case 'npm':
-    default:
-      return `npm run "${quoted}"${suffix}`;
-  }
+function buildRunCommand(
+  pm: PackageManager,
+  scriptName: string,
+  extraArgs: string[]
+): { command: string; args: string[] } {
+  const command = pm;
+  const baseArgs = ['run', scriptName];
+  const args = extraArgs.length > 0 ? [...baseArgs, '--', ...extraArgs] : baseArgs;
+  return { command, args };
 }
 
-function trimOutput(out: string, limit = 12000): { text: string; truncated: boolean } {
-  if (out.length <= limit) return { text: out, truncated: false };
-  return { text: out.slice(0, limit) + `\n...[truncated ${out.length - limit} chars]`, truncated: true };
+function parseArgString(input: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inSingle = false;
+  let inDouble = false;
+  let escaping = false;
+  let tokenActive = false;
+
+  const pushCurrent = () => {
+    if (!tokenActive) return;
+    result.push(current);
+    current = '';
+    tokenActive = false;
+  };
+
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i];
+
+    if (escaping) {
+      current += ch;
+      escaping = false;
+      tokenActive = true;
+      continue;
+    }
+
+    if (!inSingle && ch === '\\') {
+      escaping = true;
+      tokenActive = true;
+      continue;
+    }
+
+    if (!inDouble && ch === "'" && !escaping) {
+      inSingle = !inSingle;
+      tokenActive = true;
+      continue;
+    }
+
+    if (!inSingle && ch === '"' && !escaping) {
+      inDouble = !inDouble;
+      tokenActive = true;
+      continue;
+    }
+
+    if (!inSingle && !inDouble && /\s/.test(ch)) {
+      pushCurrent();
+      continue;
+    }
+
+    current += ch;
+    tokenActive = true;
+  }
+
+  if (escaping) {
+    current += '\\';
+    tokenActive = true;
+  }
+
+  pushCurrent();
+  return result;
+}
+
+function toolInputToExtraArgs(input: unknown): string[] {
+  if (!isPlainObject(input)) return [];
+
+  const rawArgsValue = input.args;
+  let rawArgs: string[] = [];
+  if (typeof rawArgsValue === 'string') {
+    rawArgs = parseArgString(rawArgsValue);
+  } else if (Array.isArray(rawArgsValue)) {
+    rawArgs = rawArgsValue.map((v) => String(v));
+  }
+
+  const positionalValue = input._;
+  const positional: string[] = Array.isArray(positionalValue) ? positionalValue.map((v) => String(v)) : [];
+
+  const keys = Object.keys(input)
+    .filter((k) => k !== 'args' && k !== '_' && input[k] !== undefined)
+    .sort();
+
+  const flags: string[] = [];
+  for (const key of keys) {
+    const value = input[key];
+    const flag = key.startsWith('-') ? key : `--${key}`;
+
+    if (value === null || value === undefined) continue;
+    if (typeof value === 'boolean') {
+      if (value) flags.push(flag);
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item === null || item === undefined) continue;
+        if (typeof item === 'boolean') {
+          if (item) flags.push(flag);
+        } else {
+          flags.push(flag, String(item));
+        }
+      }
+      continue;
+    }
+
+    if (typeof value === 'object') {
+      flags.push(flag, JSON.stringify(value));
+      continue;
+    }
+
+    flags.push(flag, String(value));
+  }
+
+  return [...flags, ...positional, ...rawArgs];
+}
+
+function trimOutput(out: string, limit = 12000, totalLength?: number): { text: string; truncated: boolean } {
+  const total = typeof totalLength === 'number' ? totalLength : out.length;
+  if (total <= limit) return { text: out, truncated: false };
+  return { text: out.slice(0, limit) + `\n...[truncated ${total - limit} chars]`, truncated: true };
+}
+
+async function runProcess(
+  command: string,
+  args: string[],
+  options: { cwd: string; env: NodeJS.ProcessEnv }
+): Promise<{ stdout: string; stderr: string; exitCode: number | null; signal: NodeJS.Signals | null; totalLength: number }> {
+  const outputCaptureLimit = 120000;
+  let stdout = '';
+  let stderr = '';
+  let stdoutTotal = 0;
+  let stderrTotal = 0;
+
+  const child = spawn(command, args, {
+    cwd: options.cwd,
+    env: options.env,
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  const capture = (kind: 'stdout' | 'stderr', chunk: Buffer) => {
+    const text = chunk.toString('utf8');
+    if (kind === 'stdout') {
+      stdoutTotal += text.length;
+      if (stdout.length < outputCaptureLimit) stdout += text.slice(0, outputCaptureLimit - stdout.length);
+    } else {
+      stderrTotal += text.length;
+      if (stderr.length < outputCaptureLimit) stderr += text.slice(0, outputCaptureLimit - stderr.length);
+    }
+  };
+
+  child.stdout?.on('data', (chunk: Buffer) => capture('stdout', chunk));
+  child.stderr?.on('data', (chunk: Buffer) => capture('stderr', chunk));
+
+  const exit = await new Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }>((resolvePromise, rejectPromise) => {
+    child.on('error', (err: Error) => rejectPromise(err));
+    child.on('close', (code: number | null, signal: NodeJS.Signals | null) => resolvePromise({ exitCode: code, signal }));
+  });
+
+  const totalLength = stdoutTotal + stderrTotal + (stdoutTotal > 0 && stderrTotal > 0 ? 1 : 0);
+  return { stdout, stderr, exitCode: exit.exitCode, signal: exit.signal, totalLength };
 }
 
 async function main() {
@@ -224,48 +512,79 @@ async function main() {
     console.error(`npm-run-mcp-server: No scripts found in ${pkgJsonPath}`);
   }
 
+  const mcpConfig = readMcpConfig(projectPkg);
+  const filteredScriptNames = filterScriptNames(scriptNames, mcpConfig);
+
+  if (filteredScriptNames.length === 0) {
+    const hint = mcpConfig.include?.length
+      ? 'Check your "mcp.include"/"mcp.exclude" settings.'
+      : 'Check your package.json "scripts" section.';
+    console.error(`npm-run-mcp-server: No scripts selected for exposure. ${hint}`);
+  }
+
+  if (verbose && mcpConfig.include?.length) {
+    const missing = mcpConfig.include.filter((name) => !scripts[name]);
+    if (missing.length > 0) {
+      console.error(`[mcp] include list references missing scripts: ${missing.join(', ')}`);
+    }
+  }
+
+  const toolNameToScripts = new Map<string, string[]>();
+  for (const scriptName of filteredScriptNames) {
+    const overrideName = mcpConfig.scripts?.[scriptName]?.toolName;
+    const toolName = normalizeToolName(overrideName ?? scriptName);
+    const existing = toolNameToScripts.get(toolName) ?? [];
+    existing.push(scriptName);
+    toolNameToScripts.set(toolName, existing);
+  }
+  const collisions = Array.from(toolNameToScripts.entries()).filter(([, names]) => names.length > 1);
+  if (collisions.length > 0) {
+    console.error('npm-run-mcp-server: Tool name collisions detected. Set "mcp.scripts.<name>.toolName" to disambiguate.');
+    for (const [toolName, names] of collisions) {
+      console.error(`  ${toolName}: ${names.join(', ')}`);
+    }
+    process.exit(1);
+  }
+
   if ((args as any)['list-scripts']) {
-    for (const name of scriptNames) {
+    for (const name of filteredScriptNames) {
       console.error(`${name}: ${scripts[name]}`);
     }
     process.exit(0);
   }
 
   // Register a tool per script
-  for (const scriptName of scriptNames) {
+  for (const scriptName of filteredScriptNames) {
     // Sanitize tool name - MCP tools can only contain [a-z0-9_-]
-    const toolName = scriptName.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    const configForScript = mcpConfig.scripts?.[scriptName];
+    const toolName = normalizeToolName(configForScript?.toolName ?? scriptName);
 
     // Create a more descriptive description
     const scriptCommand = scripts[scriptName];
-    const description = `Run npm script "${scriptName}": ${scriptCommand}`;
+    const description = configForScript?.description ?? `Run npm script "${scriptName}": ${scriptCommand}`;
 
-
-    server.tool(
+    server.registerTool(
       toolName,
-      description,
       {
-        inputSchema: {
-          type: 'object',
-          properties: {
-            args: {
-              type: 'string',
-              description: 'Optional arguments appended after -- to the script'
-            }
-          }
-        },
+        description,
+        inputSchema: buildToolInputSchema(configForScript),
       },
-      async ({ args: extraArgs }: { args?: string }) => {
-        const command = buildRunCommand(pm, scriptName, extraArgs);
+      async (input: Record<string, unknown>) => {
+        const extraArgs = toolInputToExtraArgs(input);
+        const { command, args: runArgs } = buildRunCommand(pm, scriptName, extraArgs);
         try {
-          const { stdout, stderr } = await exec(command, {
+          const { stdout, stderr, exitCode, signal, totalLength } = await runProcess(command, runArgs, {
             cwd: projectDir,
             env: process.env,
-            maxBuffer: 16 * 1024 * 1024, // 16MB
-            windowsHide: true,
           });
           const combined = stdout && stderr ? `${stdout}\n${stderr}` : stdout || stderr || '';
-          const { text } = trimOutput(combined);
+          const succeeded = exitCode === 0;
+          const failurePrefix = succeeded
+            ? ''
+            : `Command failed (exit=${exitCode}${signal ? `, signal=${signal}` : ''}): ${command} ${runArgs.join(' ')}`;
+          const combinedWithStatus = failurePrefix ? [failurePrefix, combined].filter(Boolean).join('\n') : combined;
+          const totalLengthWithStatus = failurePrefix ? totalLength + failurePrefix.length + (combined ? 1 : 0) : totalLength;
+          const { text } = trimOutput(combinedWithStatus, 12000, totalLengthWithStatus);
           return {
             content: [
               {
@@ -275,11 +594,8 @@ async function main() {
             ],
           };
         } catch (error: any) {
-          const stdout = error?.stdout ?? '';
-          const stderr = error?.stderr ?? '';
           const message = error?.message ? String(error.message) : 'Script failed';
-          const combined = [message, stdout, stderr].filter(Boolean).join('\n');
-          const { text } = trimOutput(combined);
+          const { text } = trimOutput(message);
           return {
             content: [
               {
@@ -295,7 +611,7 @@ async function main() {
 
   const transport = new StdioServerTransport();
   if (verbose) {
-    console.error(`[mcp] registered ${scriptNames.length} tools; awaiting stdio client...`);
+    console.error(`[mcp] registered ${filteredScriptNames.length} tools; awaiting stdio client...`);
   }
   await server.connect(transport);
   if (verbose) {
@@ -336,5 +652,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
-

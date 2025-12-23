@@ -34,5 +34,9 @@ jobs:
         run: |
           node dist/index.js --list-scripts
           echo "Testing --verbose flag..."
-          timeout 5s node dist/index.js --verbose || true
+          node dist/index.js --verbose &
+          pid=$!
+          sleep 5
+          kill $pid || true
+          wait $pid || true
         shell: bash

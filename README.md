@@ -18,18 +18,27 @@
 
 - [Install](#install)
 - [Usage](#usage)
+  - [As an MCP Server](#as-an-mcp-server)
+  - [As a CLI Tool](#as-a-cli-tool)
 - [Configuration](#configuration)
-  - [GitHub Copilot Chat (VS Code)](#github-copilot-chat-vs-code)
-  - [Claude Code (VS Code extension)](#claude-code-vs-code-extension)
-  - [Claude Code (terminal / standalone)](#claude-code-terminal--standalone)
+  - [GitHub Copilot (VS Code)](#github-copilot-vs-code)
   - [Cursor](#cursor)
+  - [Claude Code](#claude-code)
+  - [Multi-Project Workflow](#multi-project-workflow)
+  - [Auto-Restart on Script Changes](#auto-restart-on-script-changes)
+  - [Script Exposure Config](#script-exposure-config)
   - [Install from source](#install-from-source)
 - [Testing with MCP Inspector](#testing-with-mcp-inspector)
 - [CLI Options](#cli-options)
 - [Contributing](#contributing)
+  - [Reporting Issues](#reporting-issues)
+  - [Submitting Changes](#submitting-changes)
+  - [Development Setup](#development-setup)
 - [License](#license)
 
 ## Install
+
+Installation options.
 
 ```bash
 npm i -D npm-run-mcp-server
@@ -39,7 +48,11 @@ npm i -g npm-run-mcp-server
 npx npm-run-mcp-server
 ```
 
+**Current version**: 0.2.10
+
 ## Usage
+
+MCP server and CLI tool usage.
 
 ### As an MCP Server
 
@@ -50,8 +63,10 @@ Add this server to your MCP host configuration. It uses stdio and automatically 
 - **Smart Tool Names**: Script names with colons (like `install:discord`) are automatically converted to valid tool names (`install_discord`)
 - **Rich Descriptions**: Each tool includes the actual script command in its description
 - **Package Manager Detection**: Automatically detects npm, pnpm, yarn, or bun
-- **Optional Arguments**: Each tool accepts an optional `args` string that is appended after `--` when running the script
+- **Optional Arguments**: Each tool accepts optional `args` (`string` or `string[]`) appended after `--` when running the script
 - **Auto-Restart on Changes**: Automatically restarts when `package.json` scripts are modified, ensuring tools are always up-to-date
+
+Note: scripts run inside the target project. If they rely on local dependencies (eslint, vitest, tsc), install them first (for example, `npm install`).
 
 ### As a CLI Tool
 
@@ -73,8 +88,16 @@ npx npm-run-mcp-server --pm yarn --list-scripts
 
 ## Configuration
 
-### Install in GitHub Copilot Chat (VS Code)
+Setup instructions for AI agents.
 
+### GitHub Copilot (VS Code)
+
+#### Via UI
+1. Open VS Code settings
+2. Search for "MCP"
+3. Add server configuration in settings.json
+
+#### Via Config File
 Option A — per-workspace via `.vscode/mcp.json` (recommended for multi-project use):
 
 ```json
@@ -101,39 +124,23 @@ Option B — user settings (`settings.json`):
 }
 ```
 
-**Note**: The server automatically detects the current project's `package.json` using workspace environment variables (like `WORKSPACE_FOLDER_PATHS`) or by walking up from the current working directory. No hardcoded paths are needed - it works seamlessly across all your projects.
-
 Then open Copilot Chat, switch to Agent mode, and start the `npm-scripts` server from the tools panel.
 
-### Multi-Project Workflow
+### Cursor
 
-The MCP server is designed to work seamlessly across multiple projects without configuration changes:
+#### Via UI
+1. Open Settings -> MCP Servers -> Add MCP Server
+2. Type: NPX Package
+3. Command: `npx`
+4. Arguments: `-y npm-run-mcp-server`
+5. Save and start the server from the tools list
 
-- **VS Code/Cursor**: The server automatically detects the current workspace using environment variables like `WORKSPACE_FOLDER_PATHS`
-- **Claude Desktop**: The server uses the working directory where Claude is launched
-- **No Hardcoded Paths**: All examples use `npx npm-run-mcp-server` without `--cwd` flags
-- **Smart Detection**: The server first tries workspace environment variables, then falls back to walking up the directory tree to find the nearest `package.json`
-- **Cross-Platform**: Handles Windows/WSL path conversions automatically
-
-This means you can use the same MCP configuration across all your projects, and the server will automatically target the correct project based on your current workspace.
-
-### Auto-Restart on Script Changes
-
-The MCP server automatically monitors your `package.json` file for changes. When you add, remove, or modify scripts, the server will:
-
-1. **Detect the change** and log it (with `--verbose` flag)
-2. **Gracefully exit** to allow the MCP client to restart the server
-3. **Reload with new tools** based on the updated scripts
-
-This ensures your MCP tools are always synchronized with your current `package.json` scripts without manual intervention.
-
-### Install in Claude Code (VS Code extension)
-
-Add to VS Code user/workspace settings (`settings.json`):
+#### Via Config File
+Add to Cursor's MCP configuration:
 
 ```json
 {
-  "claude.mcpServers": {
+  "servers": {
     "npm-scripts": {
       "command": "npx",
       "args": ["-y", "npm-run-mcp-server"]
@@ -142,20 +149,19 @@ Add to VS Code user/workspace settings (`settings.json`):
 }
 ```
 
-**Note**: Workspace settings (`.vscode/settings.json`) are recommended for multi-project use, as they automatically target the current project.
+### Claude Code
 
-Restart the extension and confirm the server/tools appear.
+#### Via Terminal
+```bash
+claude mcp add npm-scripts npx -y npm-run-mcp-server
+```
 
-### Install in Claude Code (terminal / standalone)
-
-Add this server to Claude's global config file (paths vary by OS). Create the file if it doesn't exist.
-
+#### Via Config File
+Add to Claude Code's config file:
 - Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
 
-**Recommended approach** - Using npx (works across all projects):
-
 ```json
 {
   "mcpServers": {
@@ -167,48 +173,52 @@ Add this server to Claude's global config file (paths vary by OS). Create the fi
 }
 ```
 
-**Alternative** - Using a local build (requires absolute path):
+Restart Claude Code after editing the config.
+
+### Multi-Project Workflow
+
+The MCP server automatically detects your project's `package.json` using workspace environment variables or by walking up from the current working directory. No hardcoded paths needed - it works seamlessly across all your projects.
+
+### Auto-Restart on Script Changes
+
+The server automatically monitors your `package.json` file for changes. When you modify scripts, the server gracefully exits to allow the MCP client to restart with updated tools.
+
+### Script Exposure Config
+
+You can make the tool surface more deterministic by explicitly choosing which scripts are exposed and by defining per-script tool metadata. Add an `mcp` section to your project's `package.json`:
 
 ```json
 {
-  "mcpServers": {
-    "npm-scripts": {
-      "command": "node",
-      "args": ["/absolute/path/to/npm-run-mcp-server/dist/index.js"]
-    }
-  }
-}
-```
-
-**Note**: The npx approach is recommended as it automatically targets the current working directory where Claude is launched.
-
-Optional: include environment variables
-
-```json
-{
-  "mcpServers": {
-    "npm-scripts": {
-      "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"],
-      "env": {
-        "NODE_ENV": "production"
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint ."
+  },
+  "mcp": {
+    "include": ["build", "build:dev"],
+    "exclude": ["lint"],
+    "scripts": {
+      "build:dev": {
+        "toolName": "build_dev",
+        "description": "Build in watch mode",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "watch": { "type": "boolean" }
+          }
+        }
       }
     }
   }
 }
 ```
 
-Restart Claude after editing the config so it picks up the new server.
-
-### Install in Cursor
-
-- Open Settings → MCP Servers → Add MCP Server
-- Type: NPX Package
-- Command: `npx`
-- Arguments: `-y npm-run-mcp-server`
-- Save and start the server from the tools list
-
-**Note**: This configuration automatically works across all your projects. The server will target the current project's `package.json` wherever Cursor is opened.
+Notes:
+- `include` and `exclude` are exact script names.
+- `toolName` lets you resolve naming collisions after sanitization.
+- `inputSchema` replaces the default `{ args: string | string[] }` input model for that tool.
+- Tool input fields (other than `args`) are converted to CLI flags, e.g. `{ "watch": true }` becomes `--watch` and `{ "port": 3000 }` becomes `--port 3000`.
+- If filters result in zero tools, the server logs a warning so misconfigurations are easy to spot.
 
 ### Install from source (for testing in another project)
 
@@ -255,7 +265,7 @@ Optional CLI flags you can pass in `args`:
 
 ## Testing with MCP Inspector
 
-Test the server locally before integrating with AI agents:
+Test the server locally.
 
 ```bash
 # Start MCP Inspector
@@ -272,7 +282,7 @@ You should see your package.json scripts listed as available tools. Try running 
 
 ## CLI Options
 
-Available command-line flags:
+Command-line flags.
 
 - `--cwd <path>` - Specify working directory (defaults to current directory)
 - `--pm <manager>` - Override package manager detection (npm|pnpm|yarn|bun)
@@ -281,7 +291,7 @@ Available command-line flags:
 
 ## Contributing
 
-We welcome contributions! Here's how you can help:
+Contributions welcome! How to help with development, reporting issues, and submitting changes.
 
 ### Reporting Issues
 
@@ -311,15 +321,7 @@ npm run test
 
 The project uses a custom build script located in `scripts/build.cjs` that handles TypeScript compilation and shebang injection for the executable.
 
-### Guidelines
-
-- Follow the existing code style
-- Add tests for new features
-- Update documentation as needed
-- Keep commits focused and descriptive
 
 ## License
 
-MIT
-
-
+MIT License.

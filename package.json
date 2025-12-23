@@ -1,6 +1,6 @@
 {
   "name": "npm-run-mcp-server",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "An MCP server that exposes package.json scripts as tools for agents.",
   "bin": {
     "npm-run-mcp-server": "dist/index.js"
@@ -11,19 +11,22 @@
   },
   "files": [
     "dist/index.js",
-    "dist/index.d.ts"
+    "dist/index.d.ts",
+    "dist/index.d.ts.map"
   ],
   "scripts": {
     "build": "node scripts/build.cjs",
     "start": "node ./dist/index.js",
-    "test": "node dist/index.js --list-scripts && echo 'MCP server test completed successfully'",
+    "test:integration": "node scripts/integration-test.mjs",
+    "test": "node dist/index.js --list-scripts && node scripts/integration-test.mjs && echo 'MCP server test completed successfully'",
     "prepublishOnly": "npm run build"
   },
   "engines": {
     "node": ">=18.18.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "cross-spawn": "^7.0.5",
     "zod": "^3.23.8"
   },
   "bundledDependencies": [
@@ -31,7 +34,8 @@
   ],
   "devDependencies": {
     "typescript": "^5.4.0",
-    "@types/node": "^20.14.9"
+    "@types/node": "^20.14.9",
+    "@types/cross-spawn": "^6.0.6"
   },
   "keywords": [
     "mcp",
