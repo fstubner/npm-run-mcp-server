@@ -10,31 +10,39 @@ const repoRoot = path.resolve(__dirname, '..');
 const fixtureDir = path.join(repoRoot, 'fixtures', 'mcp-project');
 const serverPath = path.join(repoRoot, 'dist', 'index.js');
 
-const transport = new StdioClientTransport({
-  command: 'node',
-  args: [serverPath, '--cwd', fixtureDir],
-  stderr: 'inherit',
-});
+async function run(configArg, expectedToolName, expectedOutputFragment) {
+  const transport = new StdioClientTransport({
+    command: 'node',
+    args: [serverPath, '--cwd', fixtureDir, '--config', configArg],
+    stderr: 'inherit',
+  });
 
-const client = new Client({ name: 'mcp-integration-test', version: '1.0.0' });
+  const client = new Client({ name: 'mcp-integration-test', version: '1.0.0' });
 
-try {
-  await client.connect(transport);
-  const tools = await client.listTools();
-  const tool = tools.tools.find((item) => item.name === 'hello');
+  try {
+    await client.connect(transport);
+    const tools = await client.listTools();
+    const tool = tools.tools.find((item) => item.name === expectedToolName);
 
-  if (!tool) {
-    console.error('Expected tool "hello" not found.');
-    process.exit(1);
+    if (!tool) {
+      console.error(`Expected tool "${expectedToolName}" not found.`);
+      process.exit(1);
+    }
+
+    const result = await client.callTool({ name: expectedToolName, arguments: {} });
+    const text = result.content?.[0]?.text ?? '';
+    if (!text.includes(expectedOutputFragment)) {
+      console.error('Unexpected tool output:');
+      console.error(text);
+      process.exit(1);
+    }
+  } finally {
+    await transport.close();
   }
-
-  const result = await client.callTool({ name: 'hello', arguments: {} });
-  const text = result.content?.[0]?.text ?? '';
-  if (!text.includes('mcp fixture hello')) {
-    console.error('Unexpected tool output:');
-    console.error(text);
-    process.exit(1);
-  }
-} finally {
-  await transport.close();
 }
+
+// JSON config file
+await run('npm-run-mcp.config.json', 'say_hello', 'mcp fixture hello');
+
+// JSONC config file (comments + trailing commas)
+await run('custom.config.jsonc', 'say_goodbye', 'mcp fixture goodbye');

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "hello": "node -e \"console.log('mcp fixture hello')\""
+    "hello": "node -e \"console.log('mcp fixture hello')\"",
+    "goodbye": "node -e \"console.log('mcp fixture goodbye')\""
   }
 }

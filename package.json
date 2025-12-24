@@ -12,7 +12,8 @@
   "files": [
     "dist/index.js",
     "dist/index.d.ts",
-    "dist/index.d.ts.map"
+    "dist/index.d.ts.map",
+    "npm-run-mcp.config.schema.json"
   ],
   "scripts": {
     "build": "node scripts/build.cjs",
@@ -27,6 +28,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
     "cross-spawn": "^7.0.5",
+    "jsonc-parser": "^3.3.1",
     "zod": "^3.23.8"
   },
   "bundledDependencies": [

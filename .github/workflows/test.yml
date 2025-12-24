@@ -30,7 +30,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test basic functionality
+      - name: Test basic functionality (Unix)
+        if: runner.os != 'Windows'
         run: |
           node dist/index.js --list-scripts
           echo "Testing --verbose flag..."
@@ -40,3 +41,17 @@ jobs:
           kill $pid || true
           wait $pid || true
         shell: bash
+
+      - name: Test basic functionality (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          node dist/index.js --list-scripts
+          Write-Host "Testing --verbose flag..."
+          $p = Start-Process node -ArgumentList @('dist/index.js', '--verbose') -PassThru
+          Start-Sleep -Seconds 5
+          try {
+            if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+          } catch {
+            Write-Host "Process already exited."
+          }
+        shell: pwsh

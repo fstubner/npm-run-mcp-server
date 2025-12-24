@@ -1,8 +1,9 @@
-import { readFileSync, existsSync, watch } from 'fs';
+import { readFileSync, existsSync, watch, type FSWatcher } from 'fs';
 import { promises as fsp } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import spawn from 'cross-spawn';
+import { parse as parseJsonc, type ParseError } from 'jsonc-parser';
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -13,10 +14,11 @@ type PackageJson = {
   version?: string;
   scripts?: Record<string, string>;
   packageManager?: string;
-  mcp?: unknown;
 };
 
 type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
+
+const MCP_CONFIG_FILES = ['npm-run-mcp.config.json', '.npm-run-mcp.json'] as const;
 
 type McpScriptConfig = {
   toolName?: string;
@@ -35,9 +37,8 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function readMcpConfig(pkg: PackageJson): McpConfig {
-  if (!isPlainObject(pkg.mcp)) return {};
-  const raw = pkg.mcp;
+function parseMcpConfig(raw: unknown): McpConfig {
+  if (!isPlainObject(raw)) return {};
   const include = Array.isArray(raw.include) ? raw.include.filter((v): v is string => typeof v === 'string') : undefined;
   const exclude = Array.isArray(raw.exclude) ? raw.exclude.filter((v): v is string => typeof v === 'string') : undefined;
   let scripts: Record<string, McpScriptConfig> | undefined;
@@ -54,6 +55,69 @@ function readMcpConfig(pkg: PackageJson): McpConfig {
     }
   }
   return { include, exclude, scripts };
+}
+
+function parseJsonOrJsonc(text: string, filePathForErrors: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const errors: ParseError[] = [];
+    const parsed = parseJsonc(text, errors, { allowTrailingComma: true, disallowComments: false });
+    if (errors.length > 0) {
+      const formatted = errors
+        .slice(0, 3)
+        .map((e) => `code=${e.error} offset=${e.offset} length=${e.length}`)
+        .join(', ');
+      throw new Error(`Invalid JSON/JSONC in ${filePathForErrors} (${formatted})`);
+    }
+    return parsed;
+  }
+}
+
+async function readProjectMcpConfig(projectDir: string, verbose: boolean, configArg?: string): Promise<{
+  config: McpConfig;
+  configPath: string | null;
+}> {
+  if (typeof configArg === 'string' && configArg.length > 0) {
+    const candidate = resolve(projectDir, configArg);
+    if (!existsSync(candidate)) {
+      console.error(`npm-run-mcp-server: Config file not found: ${candidate}`);
+      process.exit(1);
+    }
+    try {
+      const raw = await fsp.readFile(candidate, 'utf8');
+      const parsed = parseJsonOrJsonc(raw, candidate);
+      const config = parseMcpConfig(parsed);
+      if (verbose) {
+        console.error(`[mcp] using config file: ${candidate}`);
+      }
+      return { config, configPath: candidate };
+    } catch (error: any) {
+      const message = error?.message ? String(error.message) : String(error);
+      console.error(`npm-run-mcp-server: Failed to read config file ${candidate}: ${message}`);
+      process.exit(1);
+    }
+  }
+
+  for (const filename of MCP_CONFIG_FILES) {
+    const candidate = resolve(projectDir, filename);
+    if (!existsSync(candidate)) continue;
+    try {
+      const raw = await fsp.readFile(candidate, 'utf8');
+      const parsed = parseJsonOrJsonc(raw, candidate);
+      const config = parseMcpConfig(parsed);
+      if (verbose) {
+        console.error(`[mcp] using config file: ${candidate}`);
+      }
+      return { config, configPath: candidate };
+    } catch (error: any) {
+      const message = error?.message ? String(error.message) : String(error);
+      console.error(`npm-run-mcp-server: Failed to read config file ${candidate}: ${message}`);
+      process.exit(1);
+    }
+  }
+
+  return { config: {}, configPath: null };
 }
 
 function normalizeToolName(name: string): string {
@@ -173,7 +237,7 @@ function parseCliArgs(argv: string[]) {
       }
     }
   }
-  return args as { cwd?: string; pm?: PackageManager; verbose?: boolean; ['list-scripts']?: boolean };
+  return args as { cwd?: string; pm?: PackageManager; verbose?: boolean; ['list-scripts']?: boolean; config?: string };
 }
 
 async function findNearestPackageJson(startDir: string): Promise<string | null> {
@@ -512,12 +576,16 @@ async function main() {
     console.error(`npm-run-mcp-server: No scripts found in ${pkgJsonPath}`);
   }
 
-  const mcpConfig = readMcpConfig(projectPkg);
+  const { config: mcpConfig, configPath: mcpConfigPath } = await readProjectMcpConfig(
+    projectDir,
+    verbose,
+    typeof (args as any).config === 'string' ? String((args as any).config) : undefined
+  );
   const filteredScriptNames = filterScriptNames(scriptNames, mcpConfig);
 
   if (filteredScriptNames.length === 0) {
     const hint = mcpConfig.include?.length
-      ? 'Check your "mcp.include"/"mcp.exclude" settings.'
+      ? 'Check your config "include"/"exclude" settings.'
       : 'Check your package.json "scripts" section.';
     console.error(`npm-run-mcp-server: No scripts selected for exposure. ${hint}`);
   }
@@ -539,7 +607,9 @@ async function main() {
   }
   const collisions = Array.from(toolNameToScripts.entries()).filter(([, names]) => names.length > 1);
   if (collisions.length > 0) {
-    console.error('npm-run-mcp-server: Tool name collisions detected. Set "mcp.scripts.<name>.toolName" to disambiguate.');
+    console.error(
+      'npm-run-mcp-server: Tool name collisions detected. Set "scripts.<name>.toolName" in npm-run-mcp.config.json to disambiguate.'
+    );
     for (const [toolName, names] of collisions) {
       console.error(`  ${toolName}: ${names.join(', ')}`);
     }
@@ -618,30 +688,37 @@ async function main() {
     console.error(`[mcp] stdio transport connected (waiting for initialize)`);
   }
 
-  // Set up file watcher for package.json changes
-  if (pkgJsonPath) {
+  // Set up file watcher for package/config changes
+  const watchers: FSWatcher[] = [];
+  const watchPath = (pathToWatch: string, label: string) => {
     if (verbose) {
-      console.error(`[mcp] setting up file watcher for: ${pkgJsonPath}`);
+      console.error(`[mcp] setting up file watcher for ${label}: ${pathToWatch}`);
     }
-
-    const watcher = watch(pkgJsonPath, (eventType) => {
-      if (eventType === 'change') {
+    watchers.push(
+      watch(pathToWatch, (eventType) => {
+        if (eventType !== 'change') return;
         if (verbose) {
-          console.error(`[mcp] package.json changed, restarting server...`);
+          console.error(`[mcp] ${label} changed, restarting server...`);
         }
         // Gracefully exit to allow the MCP client to restart the server
         process.exit(0);
-      }
-    });
+      })
+    );
+  };
 
-    // Handle cleanup on process exit
+  if (pkgJsonPath) watchPath(pkgJsonPath, 'package.json');
+  if (mcpConfigPath) watchPath(mcpConfigPath, 'config');
+
+  if (watchers.length > 0) {
+    const cleanup = () => {
+      for (const watcher of watchers) watcher.close();
+    };
     process.on('SIGINT', () => {
-      watcher.close();
+      cleanup();
       process.exit(0);
     });
-
     process.on('SIGTERM', () => {
-      watcher.close();
+      cleanup();
       process.exit(0);
     });
   }

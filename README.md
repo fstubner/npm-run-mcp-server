@@ -48,8 +48,6 @@ npm i -g npm-run-mcp-server
 npx npm-run-mcp-server
 ```
 
-**Current version**: 0.2.10
-
 ## Usage
 
 MCP server and CLI tool usage.
@@ -60,11 +58,11 @@ Add this server to your MCP host configuration. It uses stdio and automatically 
 
 **Key Features:**
 - **Automatic Workspace Detection**: Works seamlessly across different projects without configuration changes
-- **Smart Tool Names**: Script names with colons (like `install:discord`) are automatically converted to valid tool names (`install_discord`)
+- **Smart Tool Names**: Script names with colons (like `test:unit`) are automatically converted to valid tool names (`test_unit`)
 - **Rich Descriptions**: Each tool includes the actual script command in its description
 - **Package Manager Detection**: Automatically detects npm, pnpm, yarn, or bun
 - **Optional Arguments**: Each tool accepts optional `args` (`string` or `string[]`) appended after `--` when running the script
-- **Auto-Restart on Changes**: Automatically restarts when `package.json` scripts are modified, ensuring tools are always up-to-date
+- **Auto-Restart on Changes**: Automatically restarts when `package.json` or config changes, ensuring tools are always up-to-date
 
 Note: scripts run inside the target project. If they rely on local dependencies (eslint, vitest, tsc), install them first (for example, `npm install`).
 
@@ -84,6 +82,9 @@ npx npm-run-mcp-server --cwd /path/to/project --list-scripts
 
 # Override package manager detection
 npx npm-run-mcp-server --pm yarn --list-scripts
+
+# Use an explicit config file (relative to the project directory, or absolute)
+npx npm-run-mcp-server --cwd /path/to/project --config npm-run-mcp.config.json --verbose
 ```
 
 ## Configuration
@@ -181,31 +182,36 @@ The MCP server automatically detects your project's `package.json` using workspa
 
 ### Auto-Restart on Script Changes
 
-The server automatically monitors your `package.json` file for changes. When you modify scripts, the server gracefully exits to allow the MCP client to restart with updated tools.
+The server automatically monitors your `package.json` file (and `npm-run-mcp.config.json` if present) for changes. When you modify scripts or config, the server gracefully exits to allow the MCP client to restart with updated tools.
 
 ### Script Exposure Config
 
-You can make the tool surface more deterministic by explicitly choosing which scripts are exposed and by defining per-script tool metadata. Add an `mcp` section to your project's `package.json`:
+You can make the tool surface more deterministic by explicitly choosing which scripts are exposed and by defining per-script tool metadata.
+
+Create `npm-run-mcp.config.json` (or `.npm-run-mcp.json`) next to your project's `package.json`:
 
 ```json
 {
+  "include": ["build", "lint", "test:unit"],
+  "exclude": ["dev", "test:e2e"],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "build:dev": "tsc -p tsconfig.json --watch",
-    "lint": "eslint ."
-  },
-  "mcp": {
-    "include": ["build", "build:dev"],
-    "exclude": ["lint"],
-    "scripts": {
-      "build:dev": {
-        "toolName": "build_dev",
-        "description": "Build in watch mode",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "watch": { "type": "boolean" }
-          }
+    "test:unit": {
+      "toolName": "test_unit",
+      "description": "Run unit tests",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "watch": { "type": "boolean" },
+          "run": { "type": "boolean" }
+        }
+      }
+    },
+    "lint": {
+      "description": "Lint the codebase",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fix": { "type": "boolean" }
         }
       }
     }
@@ -216,9 +222,10 @@ You can make the tool surface more deterministic by explicitly choosing which sc
 Notes:
 - `include` and `exclude` are exact script names.
 - `toolName` lets you resolve naming collisions after sanitization.
-- `inputSchema` replaces the default `{ args: string | string[] }` input model for that tool.
+- `inputSchema` extends the default input model (and `args` is always available).
 - Tool input fields (other than `args`) are converted to CLI flags, e.g. `{ "watch": true }` becomes `--watch` and `{ "port": 3000 }` becomes `--port 3000`.
 - If filters result in zero tools, the server logs a warning so misconfigurations are easy to spot.
+- Config files support JSONC (comments + trailing commas). A JSON Schema is published as `npm-run-mcp.config.schema.json`.
 
 ### Install from source (for testing in another project)
 
@@ -285,6 +292,7 @@ You should see your package.json scripts listed as available tools. Try running 
 Command-line flags.
 
 - `--cwd <path>` - Specify working directory (defaults to current directory)
+- `--config <path>` - Use an explicit config file path (relative to the project directory, or absolute)
 - `--pm <manager>` - Override package manager detection (npm|pnpm|yarn|bun)
 - `--verbose` - Enable detailed logging to stderr
 - `--list-scripts` - List available scripts and exit
