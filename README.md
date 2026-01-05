@@ -138,7 +138,7 @@ npx npm-run-mcp-server --pm pnpm
 
 ## 🤝 Contributing
 
-We love contributions! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 1. Fork the repo.
 2. Create your feature branch (`git checkout -b feature/amazing-feature`).
