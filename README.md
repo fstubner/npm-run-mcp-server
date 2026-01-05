@@ -2,166 +2,30 @@
 
 <div align="center">
 
-*A Model Context Protocol (MCP) server that exposes your project's `package.json` scripts as tools for AI agents.*
+*Give your AI Agent the power to build, test, and deploy your project using your existing package.json scripts.*
 
 [![Test](https://github.com/fstubner/npm-run-mcp-server/workflows/Test/badge.svg)](https://github.com/fstubner/npm-run-mcp-server/actions/workflows/test.yml)
 [![Build & Publish](https://github.com/fstubner/npm-run-mcp-server/workflows/Build%20&%20Publish/badge.svg)](https://github.com/fstubner/npm-run-mcp-server/actions/workflows/build-and-publish.yml)
 [![NPM Version](https://img.shields.io/npm/v/npm-run-mcp-server.svg)](https://www.npmjs.com/package/npm-run-mcp-server)
-[![NPM Installs](https://img.shields.io/npm/dt/npm-run-mcp-server.svg)](https://www.npmjs.com/package/npm-run-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
 
+**npm-run-mcp-server** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that automatically bridges your project's `npm` scripts to your AI assistant.
 
+- 🔍 **Auto-detects** your project's `package.json` (no hardcoded paths).
+- 📦 **Works with everything**: npm, pnpm, yarn, and bun.
+- 🔒 **Safe & Configurable**: Whitelist specific scripts to prevent accidental execution.
+- ⚡ **Zero-config**: Works out of the box, but scales with detailed config.
 
-## Table of Contents
+---
 
-- [Install](#install)
-- [Usage](#usage)
-  - [As an MCP Server](#as-an-mcp-server)
-  - [As a CLI Tool](#as-a-cli-tool)
-- [Configuration](#configuration)
-  - [GitHub Copilot (VS Code)](#github-copilot-vs-code)
-  - [Cursor](#cursor)
-  - [Claude Code](#claude-code)
-  - [Multi-Project Workflow](#multi-project-workflow)
-  - [Auto-Restart on Script Changes](#auto-restart-on-script-changes)
-  - [Script Exposure Config](#script-exposure-config)
-  - [Install from source](#install-from-source)
-- [Testing with MCP Inspector](#testing-with-mcp-inspector)
-- [CLI Options](#cli-options)
-- [Contributing](#contributing)
-  - [Reporting Issues](#reporting-issues)
-  - [Submitting Changes](#submitting-changes)
-  - [Development Setup](#development-setup)
-- [License](#license)
+## ⚡ Quick Start
 
-## Install
+Connect your agent to your scripts in seconds. No global installation required—just let `npx` handle it.
 
-Installation options.
-
-```bash
-npm i -D npm-run-mcp-server
-# or globally
-npm i -g npm-run-mcp-server
-# ad-hoc
-npx npm-run-mcp-server
-```
-
-## Usage
-
-MCP server and CLI tool usage.
-
-### As an MCP Server
-
-Add this server to your MCP host configuration. It uses stdio and automatically detects your project's `package.json` using workspace environment variables or by walking up from the current working directory.
-
-**Key Features:**
-- **Automatic Workspace Detection**: Works seamlessly across different projects without configuration changes
-- **Smart Tool Names**: Script names with colons (like `test:unit`) are automatically converted to valid tool names (`test_unit`)
-- **Rich Descriptions**: Each tool includes the actual script command in its description
-- **Package Manager Detection**: Automatically detects npm, pnpm, yarn, or bun
-- **Optional Arguments**: Each tool accepts optional `args` (`string` or `string[]`) appended after `--` when running the script
-- **Auto-Restart on Changes**: Automatically restarts when `package.json` or config changes, ensuring tools are always up-to-date
-
-Note: scripts run inside the target project. If they rely on local dependencies (eslint, vitest, tsc), install them first (for example, `npm install`).
-
-### As a CLI Tool
-
-You can also use this package directly from the command line:
-
-```bash
-# List available scripts in current directory
-npx npm-run-mcp-server --list-scripts
-
-# Run with verbose output
-npx npm-run-mcp-server --verbose
-
-# Specify a different working directory
-npx npm-run-mcp-server --cwd /path/to/project --list-scripts
-
-# Override package manager detection
-npx npm-run-mcp-server --pm yarn --list-scripts
-
-# Use an explicit config file (relative to the project directory, or absolute)
-npx npm-run-mcp-server --cwd /path/to/project --config npm-run-mcp.config.json --verbose
-```
-
-## Configuration
-
-Setup instructions for AI agents.
-
-### GitHub Copilot (VS Code)
-
-#### Via UI
-1. Open VS Code settings
-2. Search for "MCP"
-3. Add server configuration in settings.json
-
-#### Via Config File
-Option A — per-workspace via `.vscode/mcp.json` (recommended for multi-project use):
-
-```json
-{
-  "servers": {
-    "npm-scripts": {
-      "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
-    }
-  }
-}
-```
-
-Option B — user settings (`settings.json`):
-
-```json
-{
-  "mcp.servers": {
-    "npm-scripts": {
-      "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
-    }
-  }
-}
-```
-
-Then open Copilot Chat, switch to Agent mode, and start the `npm-scripts` server from the tools panel.
-
-### Cursor
-
-#### Via UI
-1. Open Settings -> MCP Servers -> Add MCP Server
-2. Type: NPX Package
-3. Command: `npx`
-4. Arguments: `-y npm-run-mcp-server`
-5. Save and start the server from the tools list
-
-#### Via Config File
-Add to Cursor's MCP configuration:
-
-```json
-{
-  "servers": {
-    "npm-scripts": {
-      "command": "npx",
-      "args": ["-y", "npm-run-mcp-server"]
-    }
-  }
-}
-```
-
-### Claude Code
-
-#### Via Terminal
-```bash
-claude mcp add npm-scripts npx -y npm-run-mcp-server
-```
-
-#### Via Config File
-Add to Claude Code's config file:
-- Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
+### Claude Desktop
+Add this to your `claude_desktop_config.json`:
 
 ```json
 {
@@ -174,44 +38,47 @@ Add to Claude Code's config file:
 }
 ```
 
-Restart Claude Code after editing the config.
+### Cursor
+1. Go to **Settings** > **Features** > **MCP Servers**.
+2. Click **+ Add New MCP Server**.
+3. Enter the details:
+   - **Type**: `command`
+   - **Name**: `npm-scripts`
+   - **Command**: `npx`
+   - **Args**: `-y npm-run-mcp-server`
 
-### Multi-Project Workflow
-
-The MCP server automatically detects your project's `package.json` using workspace environment variables or by walking up from the current working directory. No hardcoded paths needed - it works seamlessly across all your projects.
-
-### Auto-Restart on Script Changes
-
-The server automatically monitors your `package.json` file (and `npm-run-mcp.config.json` if present) for changes. When you modify scripts or config, the server gracefully exits to allow the MCP client to restart with updated tools.
-
-### Script Exposure Config
-
-You can make the tool surface more deterministic by explicitly choosing which scripts are exposed and by defining per-script tool metadata.
-
-Create `npm-run-mcp.config.json` (or `.npm-run-mcp.json`) next to your project's `package.json`:
+### VS Code (GitHub Copilot)
+Add this to your workspace `.vscode/settings.json`:
 
 ```json
 {
-  "include": ["build", "lint", "test:unit"],
-  "exclude": ["dev", "test:e2e"],
+  "github.copilot.chat.mcpServers": {
+    "npm-scripts": {
+      "command": "npx",
+      "args": ["-y", "npm-run-mcp-server"]
+    }
+  }
+}
+```
+
+---
+
+## 🛠️ Configuration
+
+While `npm-run-mcp-server` works instantly, you might not want your AI to have access to *every* script (like `eject` or `publish`). You can control this by creating an `npm-run-mcp.config.json` file in your project root.
+
+### Example Config
+Create `npm-run-mcp.config.json` next to your `package.json`:
+
+```json
+{
+  "include": ["test", "lint", "build", "start"],
   "scripts": {
-    "test:unit": {
-      "toolName": "test_unit",
-      "description": "Run unit tests",
+    "test": {
+      "description": "Run the test suite. Use --watch for interactive mode.",
       "inputSchema": {
-        "type": "object",
         "properties": {
-          "watch": { "type": "boolean" },
-          "run": { "type": "boolean" }
-        }
-      }
-    },
-    "lint": {
-      "description": "Lint the codebase",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "fix": { "type": "boolean" }
+          "watch": { "type": "boolean", "description": "Watch files for changes" }
         }
       }
     }
@@ -219,117 +86,66 @@ Create `npm-run-mcp.config.json` (or `.npm-run-mcp.json`) next to your project's
 }
 ```
 
-Notes:
-- `include` and `exclude` are exact script names.
-- `toolName` lets you resolve naming collisions after sanitization.
-- `inputSchema` extends the default input model (and `args` is always available).
-- Tool input fields (other than `args`) are converted to CLI flags, e.g. `{ "watch": true }` becomes `--watch` and `{ "port": 3000 }` becomes `--port 3000`.
-- If filters result in zero tools, the server logs a warning so misconfigurations are easy to spot.
-- Config files support JSONC (comments + trailing commas). A JSON Schema is published as `npm-run-mcp.config.schema.json`.
+### Configuration Options
 
-### Install from source (for testing in another project)
+| Field | Type | Description |
+|-------|------|-------------|
+| `include` | `string[]` | Whitelist of script names to expose. If omitted, *all* scripts are exposed. |
+| `exclude` | `string[]` | Blacklist of script names to hide. |
+| `scripts` | `object` | Detailed configuration for specific scripts. |
 
-Clone, build, and link globally:
+#### Per-Script Options
+Inside the `scripts` object, you can map a script name to:
 
-```bash
-git clone https://github.com/your-org-or-user/npm-run-mcp-server.git
-cd npm-run-mcp-server
-npm install
-npm run build
-npm link
-```
+- `toolName`: Override the tool name seen by the AI (e.g., rename `test:unit` to `run_unit_tests`).
+- `description`: Provide a custom description to help the AI understand when to use this script.
+- `inputSchema`: Define strictly typed arguments that the AI can pass (mapped to CLI flags).
 
-In your other project, either reference the global binary or the built file directly:
+---
 
-- Using the linked binary:
+## 📖 How It Works
 
-```json
-{
-  "servers": {
-    "npm-scripts": {
-      "command": "npm-run-mcp-server"
-    }
-  }
-}
-```
+1. **Auto-Detection**: When the server starts, it looks for a `package.json` in your current workspace. It supports standard formatting as well as `npm`, `pnpm`, `yarn`, and `bun` conventions.
+2. **Tool Creation**: It converts your scripts into MCP Tools.
+   - Scripts like `test:unit` become tools like `test_unit`.
+   - The tool description includes the actual command (e.g., `vitest run`) so the AI knows what it's running.
+3. **Execution**: When the AI calls a tool, the server executes the script in your project's root directory using the detected package manager.
 
-- Using an explicit Node command (no global link needed):
+---
 
-```json
-{
-  "servers": {
-    "npm-scripts": {
-      "command": "node",
-      "args": ["/absolute/path/to/npm-run-mcp-server/dist/index.js"]
-    }
-  }
-}
-```
+## 🔧 Advanced / CLI Usage
 
-Optional CLI flags you can pass in `args`:
-- `--cwd /path/to/project` to choose which project to read `package.json` from (rarely needed - server auto-detects by default)
-- `--pm npm|pnpm|yarn|bun` to override package manager detection
-
-## Testing with MCP Inspector
-
-Test the server locally.
+You can run the server manually for debugging or if you need to pass specific flags.
 
 ```bash
-# Start MCP Inspector
-npx @modelcontextprotocol/inspector
+# Run directly
+npx npm-run-mcp-server --list-scripts
 
-# In the Inspector UI:
-# 1. Transport Type: STDIO
-# 2. Command: npx
-# 3. Arguments: npm-run-mcp-server --cwd /path/to/your/project --verbose
-# 4. Click "Connect"
+# Run in a specific directory
+npx npm-run-mcp-server --cwd /path/to/project
+
+# Force a specific package manager
+npx npm-run-mcp-server --pm pnpm
 ```
 
-You should see your package.json scripts listed as available tools. Try running one - it executes the script and returns the output.
+### CLI Flags
+- `--cwd <path>`: Manually set the working directory.
+- `--pm <npm|pnpm|yarn|bun>`: Force a specific package manager.
+- `--config <path>`: Path to a specific JSON config file.
+- `--verbose`: Print debug logs to stderr.
 
-## CLI Options
+---
 
-Command-line flags.
+## 🤝 Contributing
 
-- `--cwd <path>` - Specify working directory (defaults to current directory)
-- `--config <path>` - Use an explicit config file path (relative to the project directory, or absolute)
-- `--pm <manager>` - Override package manager detection (npm|pnpm|yarn|bun)
-- `--verbose` - Enable detailed logging to stderr
-- `--list-scripts` - List available scripts and exit
+We love contributions! Please feel free to submit a Pull Request.
 
-## Contributing
-
-Contributions welcome! How to help with development, reporting issues, and submitting changes.
-
-### Reporting Issues
-
-- Use the [issue tracker](https://github.com/fstubner/npm-run-mcp-server/issues) to report bugs
-- Include your Node.js version, package manager, and operating system
-- Provide a minimal reproduction case when possible
-
-### Submitting Changes
-
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
-3. **Make** your changes and add tests if applicable
-4. **Test** your changes: `npm run build && npm run test`
-5. **Commit** your changes: `git commit -m 'Add amazing feature'`
-6. **Push** to the branch: `git push origin feature/amazing-feature`
-7. **Submit** a pull request
-
-### Development Setup
-
-```bash
-git clone https://github.com/fstubner/npm-run-mcp-server.git
-cd npm-run-mcp-server
-npm install
-npm run build
-npm run test
-```
-
-The project uses a custom build script located in `scripts/build.cjs` that handles TypeScript compilation and shebang injection for the executable.
-
+1. Fork the repo.
+2. Create your feature branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes (`git commit -m 'Add some amazing feature'`).
+4. Push to the branch (`git push origin feature/amazing-feature`).
+5. Open a Pull Request.
 
 ## License
 
-MIT License.
+MIT © [fstubner](https://github.com/fstubner)
