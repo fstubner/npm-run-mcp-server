@@ -6,7 +6,7 @@
     "url": "https://github.com/fstubner/npm-run-mcp-server",
     "source": "github"
   },
-  "version": "0.2.12",
+  "version": "0.2.13",
   "packages": [
     {
       "registryType": "npm",
