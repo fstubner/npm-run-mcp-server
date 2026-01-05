@@ -6,12 +6,12 @@
     "url": "https://github.com/fstubner/npm-run-mcp-server",
     "source": "github"
   },
-  "version": "0.2.11",
+  "version": "0.2.12",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "npm-run-mcp-server",
-      "version": "0.2.11",
+      "version": "0.2.12",
       "transport": {
         "type": "stdio"
       }

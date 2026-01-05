@@ -1,6 +1,6 @@
 {
   "name": "npm-run-mcp-server",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "mcpName": "io.github.fstubner/npm-run-mcp-server",
   "description": "An MCP server that exposes package.json scripts as tools for agents.",
   "bin": {
