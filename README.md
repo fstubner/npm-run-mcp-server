@@ -9,7 +9,7 @@
 [![NPM Version](https://img.shields.io/npm/v/npm-run-mcp-server.svg)](https://www.npmjs.com/package/npm-run-mcp-server)
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-Listed-blue)](https://registry.modelcontextprotocol.io)
 [![Install in Cursor](https://img.shields.io/badge/Install_in-Cursor-000000?style=flat-square&logoColor=white)](https://cursor.com/en/install-mcp?name=npm-scripts&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm5wbS1ydW4tbWNwLXNlcnZlciJdfQ==)
-[![Install in VS Code](https://img.shields.io/badge/Install_in-VS_Code-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=npm-scripts&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm5wbS1ydW4tbWNwLXNlcnZlciJdfQ==)
+[![Install in VS Code](https://img.shields.io/badge/Install_in-VS_Code-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=npm-scripts&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22npm-run-mcp-server%22%5D%7D)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
@@ -55,7 +55,7 @@ Add this to your `claude_desktop_config.json`:
 
 ### VS Code (GitHub Copilot)
 
-[![Install in VS Code](https://img.shields.io/badge/Install_in-VS_Code-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=npm-scripts&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm5wbS1ydW4tbWNwLXNlcnZlciJdfQ==)
+[![Install in VS Code](https://img.shields.io/badge/Install_in-VS_Code-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=npm-scripts&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22npm-run-mcp-server%22%5D%7D)
 
 Add this to your workspace `.vscode/settings.json`:
 
