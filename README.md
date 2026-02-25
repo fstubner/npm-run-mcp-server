@@ -14,6 +14,10 @@
 
 </div>
 
+<a href="https://glama.ai/mcp/servers/@fstubner/npm-run-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@fstubner/npm-run-mcp-server/badge" alt="npm-run-mcp-server MCP server" />
+</a>
+
 **npm-run-mcp-server** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that automatically bridges your project's `npm` scripts to your AI assistant.
 
 - 🔍 **Auto-detects** your project's `package.json` (no hardcoded paths).
@@ -157,4 +161,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT © [fstubner](https://github.com/fstubner)
+MIT © [Felix Stubner](https://github.com/fstubner)
