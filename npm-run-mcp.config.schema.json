@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/fstubner/npm-run-mcp-server/main/npm-run-mcp.config.schema.json",
+  "title": "npm-run-mcp-server config",
+  "description": "Controls which package.json scripts are exposed as MCP tools, plus optional per-script metadata.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "include": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Exact script names to include. If omitted, all scripts are eligible (subject to exclude)."
+    },
+    "exclude": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Exact script names to exclude."
+    },
+    "scripts": {
+      "type": "object",
+      "description": "Per-script tool metadata overrides.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "toolName": {
+            "type": "string",
+            "description": "Override the generated tool name (after sanitization)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Override the tool description."
+          },
+          "argsDescription": {
+            "type": "string",
+            "description": "Description shown for the `args` input field."
+          },
+          "inputSchema": {
+            "type": "object",
+            "description": "JSON Schema for additional tool inputs; keys are converted to CLI flags. `args` is always available."
+          }
+        }
+      }
+    }
+  }
+}

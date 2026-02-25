@@ -1,0 +1,9 @@
+{
+  "include": ["hello"],
+  "scripts": {
+    "hello": {
+      "toolName": "say_hello",
+      "description": "Say hello from the fixture project"
+    }
+  }
+}

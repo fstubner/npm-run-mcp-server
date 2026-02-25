@@ -1,0 +1,9 @@
+// jsonc test file (comments + trailing commas)
+{
+  "include": ["goodbye"],
+  "scripts": {
+    "goodbye": {
+      "toolName": "say_goodbye",
+    },
+  },
+}
