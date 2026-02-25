@@ -12,11 +12,11 @@
 [![Install in VS Code](https://img.shields.io/badge/Install_in-VS_Code-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=npm-scripts&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22npm-run-mcp-server%22%5D%7D)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+  <a href="https://glama.ai/mcp/servers/@fstubner/npm-run-mcp-server">
+    <img width="380" height="200" src="https://glama.ai/mcp/servers/@fstubner/npm-run-mcp-server/badge" alt="npm-run-mcp-server MCP server" />
+  </a>
+  <br><br>
 </div>
-
-<a href="https://glama.ai/mcp/servers/@fstubner/npm-run-mcp-server">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/@fstubner/npm-run-mcp-server/badge" alt="npm-run-mcp-server MCP server" />
-</a>
 
 **npm-run-mcp-server** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that automatically bridges your project's `npm` scripts to your AI assistant.
 
