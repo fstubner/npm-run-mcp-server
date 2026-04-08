@@ -401,16 +401,19 @@ function trimOutput(out: string, limit = 12000, totalLength?: number): { text: s
   return { text: out.slice(0, limit) + `\n...[truncated ${total - limit} chars]`, truncated: true };
 }
 
+const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
 async function runProcess(
   command: string,
   args: string[],
-  options: { cwd: string; env: NodeJS.ProcessEnv }
-): Promise<{ stdout: string; stderr: string; exitCode: number | null; signal: NodeJS.Signals | null; totalLength: number }> {
+  options: { cwd: string; env: NodeJS.ProcessEnv; timeoutMs?: number }
+): Promise<{ stdout: string; stderr: string; exitCode: number | null; signal: NodeJS.Signals | null; totalLength: number; timedOut: boolean }> {
   const outputCaptureLimit = 120000;
   let stdout = '';
   let stderr = '';
   let stdoutTotal = 0;
   let stderrTotal = 0;
+  let timedOut = false;
 
   const child = spawn(command, args, {
     cwd: options.cwd,
@@ -433,13 +436,28 @@ async function runProcess(
   child.stdout?.on('data', (chunk: Buffer) => capture('stdout', chunk));
   child.stderr?.on('data', (chunk: Buffer) => capture('stderr', chunk));
 
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const exit = await new Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }>((resolvePromise, rejectPromise) => {
-    child.on('error', (err: Error) => rejectPromise(err));
-    child.on('close', (code: number | null, signal: NodeJS.Signals | null) => resolvePromise({ exitCode: code, signal }));
+    const timeoutHandle = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGTERM');
+      // Force kill after 3 seconds if SIGTERM is not enough
+      setTimeout(() => { try { child.kill('SIGKILL'); } catch {} }, 3000);
+      resolvePromise({ exitCode: null, signal: 'SIGTERM' });
+    }, timeoutMs);
+
+    child.on('error', (err: Error) => {
+      clearTimeout(timeoutHandle);
+      rejectPromise(err);
+    });
+    child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
+      clearTimeout(timeoutHandle);
+      resolvePromise({ exitCode: code, signal });
+    });
   });
 
   const totalLength = stdoutTotal + stderrTotal + (stdoutTotal > 0 && stderrTotal > 0 ? 1 : 0);
-  return { stdout, stderr, exitCode: exit.exitCode, signal: exit.signal, totalLength };
+  return { stdout, stderr, exitCode: exit.exitCode, signal: exit.signal, totalLength, timedOut };
 }
 
 async function main() {
@@ -643,17 +661,19 @@ async function main() {
         const extraArgs = toolInputToExtraArgs(input);
         const { command, args: runArgs } = buildRunCommand(pm, scriptName, extraArgs);
         try {
-          const { stdout, stderr, exitCode, signal, totalLength } = await runProcess(command, runArgs, {
+          const { stdout, stderr, exitCode, signal, totalLength, timedOut } = await runProcess(command, runArgs, {
             cwd: projectDir,
             env: process.env,
           });
           const combined = stdout && stderr ? `${stdout}\n${stderr}` : stdout || stderr || '';
-          const succeeded = exitCode === 0;
-          const failurePrefix = succeeded
-            ? ''
-            : `Command failed (exit=${exitCode}${signal ? `, signal=${signal}` : ''}): ${command} ${runArgs.join(' ')}`;
-          const combinedWithStatus = failurePrefix ? [failurePrefix, combined].filter(Boolean).join('\n') : combined;
-          const totalLengthWithStatus = failurePrefix ? totalLength + failurePrefix.length + (combined ? 1 : 0) : totalLength;
+          const succeeded = exitCode === 0 && !timedOut;
+          const failureReason = timedOut
+            ? `Command timed out after ${DEFAULT_TIMEOUT_MS / 1000}s: ${command} ${runArgs.join(' ')}`
+            : !succeeded
+              ? `Command failed (exit=${exitCode}${signal ? `, signal=${signal}` : ''}): ${command} ${runArgs.join(' ')}`
+              : '';
+          const combinedWithStatus = failureReason ? [failureReason, combined].filter(Boolean).join('\n') : combined;
+          const totalLengthWithStatus = failureReason ? totalLength + failureReason.length + (combined ? 1 : 0) : totalLength;
           const { text } = trimOutput(combinedWithStatus, 12000, totalLengthWithStatus);
           return {
             content: [

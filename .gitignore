@@ -102,3 +102,10 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Local binaries / publisher tools (not distributed with the package)
+*.exe
+*.dmg
+
+# Registry / publisher credentials and tokens
+.mcpregistry_*
+*.token
